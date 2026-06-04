@@ -1,0 +1,38 @@
+# Mac system files
+.DS_Store
+
+# R/RStudio files
+.Rproj.user/
+2021 UNE PM Project.Rproj
+.Rhistory
+.RData
+
+# Data files - keep these in Dropbox, not GitHub
+
+# LeafSEM
+LeafSEM.csv
+UNE_Sites.csv
+LeafPM.csv
+Passive_Samplers.csv
+2018_2019_Nox_Variance.csv
+
+# Microbial
+M-BUDS_ED_atherton_16S_sample_metadata_final_20250621.csv
+M-BUDS_ED_atherton_ITS_sample_metadata_final_20250621.csv
+
+# Above
+2018_UNE_Aboveground_Biomass_AllometryCalc.csv
+
+# Foliar Nutrients
+Foliar_N.csv
+
+# PM Comp
+
+axes_limits.csv
+axes_limits_medians.csv
+LeafPMComp.csv
+AmbientPM.csv
+
+# Any output files you can regenerate
+*.pdf
+*.docx
