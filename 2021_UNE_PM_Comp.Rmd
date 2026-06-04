@@ -26,10 +26,17 @@ library(gtable) # for making multipanel figure
 library(tidyverse) # for making spearman correlation matrices
 
 
-# Setting working directory to folder "csvs"
+# === FILE PATHS (update these if running on another machine) ===
+dropbox     <- "/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode"
+project     <- file.path(dropbox, "Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp")
+data_dir    <- file.path(project, "csvs")
+figures_dir <- file.path(project, "Figures")
+stats_dir <- file.path(project, "Statistics Results")
 
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
-    # Reading in axes limits from .csv
+# Setting working directory to folder "csvs" to read in all the data
+
+  setwd(data_dir)
+  # Reading in axes limits from .csv
   axes_limits <- read.csv("axes_limits.csv")
   axes_limits_medians <- read.csv("axes_limits_medians.csv")
 
@@ -216,7 +223,7 @@ AllCompxUNESites <- rbind(foliar_to_combine[,incommon], ambient_to_combine[,inco
 
 AllCompxUNESites$particle_source <- as.factor(AllCompxUNESites$particle_source)
 
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
+setwd(data_dir)
 write.csv(AllCompxUNESites,"AllCompxUNESites.csv", row.names=FALSE)
 
 # defining list of element names
@@ -235,7 +242,7 @@ write.csv(AllCompxUNESites,"AllCompxUNESites.csv", row.names=FALSE)
 install.packages("readxl")
 library("readxl") # to handle inputting the Excel files
 
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
+setwd(data_dir)
 
 # Creating a loop to extract data from all 44 different Excel files
 
@@ -326,8 +333,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
         AmbientPM$sampler <- substr(AmbientPM$sample,nchar(AmbientPM$sample),nchar(AmbientPM$sample))
       
         # write this dataframe into a csv and save it in the working directory
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
-        write.csv(AmbientPM, "AmbientPM.csv", row.names = FALSE)
+        write.csv(AmbientPM, file.path(data_dir,"AmbientPM.csv"), row.names = FALSE)
 ```
 
 # Individual Element Analysis
@@ -497,8 +503,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
         foliar_PM_art_pvals <- as.data.frame(foliar_PM_art_pvals)
         
         # write the data frame to a csv
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-        write.csv(foliar_PM_art_pvals, "foliar_PM_art_pvals.csv", row.names = TRUE)
+        write.csv(foliar_PM_art_pvals, file.path(stats_dir, "foliar_PM_art_pvals.csv"), row.names = TRUE)
         
     # the other matrices store pairwise comparisons & letters to indicate significance
         
@@ -517,8 +522,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
             foliar_PM_art_pairwise_dist[] <- lapply(foliar_PM_art_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
             
           # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_art_pairwise_dist, "foliar_PM_art_pairwise_dist.csv", row.names = TRUE)
+            write.csv(foliar_PM_art_pairwise_dist, file.path(stats_dir,"foliar_PM_art_pairwise_dist.csv"), row.names = TRUE)
         
         # isa
           foliar_PM_art_pairwise_isa <- as.data.frame(foliar_PM_art_pairwise_isa)
@@ -536,8 +540,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
             foliar_PM_art_pairwise_isa[] <- lapply(foliar_PM_art_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
             
           # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_art_pairwise_isa, "foliar_PM_art_pairwise_isa.csv", row.names = TRUE)
+            write.csv(foliar_PM_art_pairwise_isa, file.path(stats_dir,"foliar_PM_art_pairwise_isa.csv"), row.names = TRUE)
             
             
 # Ambient
@@ -745,8 +748,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
       ambient_PM_art_pvals[] <- lapply(ambient_PM_art_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
       
       # write the data frame to a csv
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-      write.csv(ambient_PM_art_pvals, "ambient_PM_art_pvals.csv", row.names = TRUE)
+      write.csv(ambient_PM_art_pvals, file.path(stats_dir,"ambient_PM_art_pvals.csv"), row.names = TRUE)
       
   # the other matrices store pairwise comparisons & letters to indicate significance
       
@@ -765,8 +767,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
           ambient_PM_art_pairwise_dist[] <- lapply(ambient_PM_art_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
           
         # write the data frame to a csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-          write.csv(ambient_PM_art_pairwise_dist, "ambient_PM_art_pairwise_dist.csv", row.names = TRUE)
+          write.csv(ambient_PM_art_pairwise_dist, file.path(stats_dir,"ambient_PM_art_pairwise_dist.csv"), row.names = TRUE)
       
       # isa
         ambient_PM_art_pairwise_isa <- as.data.frame(ambient_PM_art_pairwise_isa)
@@ -785,8 +786,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
           ambient_PM_art_pairwise_isa
           
         # write the data frame to a csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-          write.csv(ambient_PM_art_pairwise_isa, "ambient_PM_art_pairwise_isa.csv", row.names = TRUE)
+          write.csv(ambient_PM_art_pairwise_isa, file.path(stats_dir,"ambient_PM_art_pairwise_isa.csv"), row.names = TRUE)
     
 ```
 ##### ART ANOVA (NO open sites for ambient)
@@ -864,7 +864,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
         X_ART_isa <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
         X_aovART_isa <- anova(X_ART_isa)
         U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        foliar_PM_art_NOopen_pvals[i,5] <- U_R_art_NOopen_isa_pval # this places it into the matrix we made
+        foliar_PM_art_NOopen_pvals[i,5] <- U_R_art_isa_pval # this places it into the matrix we made
       
       # Urban vs. Rural and Interaction Term
         # dist
@@ -952,8 +952,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
         foliar_PM_art_NOopen_pvals <- as.data.frame(foliar_PM_art_NOopen_pvals)
         
         # write the data frame to a csv
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-        write.csv(foliar_PM_art_NOopen_pvals, "foliar_PM_art_NOopen_pvals.csv", row.names = TRUE)
+        write.csv(foliar_PM_art_NOopen_pvals, file.path(stats_dir,"foliar_PM_art_NOopen_pvals.csv"), row.names = TRUE)
         
     # the other matrices store pairwise comparisons & letters to indicate significance
         
@@ -972,8 +971,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
             foliar_PM_art_NOopen_pairwise_dist[] <- lapply(foliar_PM_art_NOopen_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
             
           # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_art_NOopen_pairwise_dist, "foliar_PM_art_NOopen_pairwise_dist.csv", row.names = TRUE)
+            write.csv(foliar_PM_art_NOopen_pairwise_dist, file.path(stats_dir,"foliar_PM_art_NOopen_pairwise_dist.csv"), row.names = TRUE)
         
         # isa
           foliar_PM_art_NOopen_pairwise_isa <- as.data.frame(foliar_PM_art_NOopen_pairwise_isa)
@@ -991,8 +989,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
             foliar_PM_art_NOopen_pairwise_isa[] <- lapply(foliar_PM_art_NOopen_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
             
           # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_art_NOopen_pairwise_isa, "foliar_PM_art_NOopen_pairwise_isa.csv", row.names = TRUE)
+            write.csv(foliar_PM_art_NOopen_pairwise_isa, file.path(stats_dir,"foliar_PM_art_NOopen_pairwise_isa.csv"), row.names = TRUE)
             
             
 # Ambient
@@ -1181,8 +1178,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
       ambient_PM_art_NOopen_pvals[] <- lapply(ambient_PM_art_NOopen_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
       
       # write the data frame to a csv
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-      write.csv(ambient_PM_art_NOopen_pvals, "ambient_PM_art_NOopen_pvals.csv", row.names = TRUE)
+      write.csv(ambient_PM_art_NOopen_pvals, file.path(stats_dir,"ambient_PM_art_NOopen_pvals.csv"), row.names = TRUE)
       
   # the other matrices store pairwise comparisons & letters to indicate significance
       
@@ -1201,8 +1197,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
           ambient_PM_art_NOopen_pairwise_dist[] <- lapply(ambient_PM_art_NOopen_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
           
         # write the data frame to a csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-          write.csv(ambient_PM_art_NOopen_pairwise_dist, "ambient_PM_art_NOopen_pairwise_dist.csv", row.names = TRUE)
+          write.csv(ambient_PM_art_NOopen_pairwise_dist, file.path(stats_dir,"ambient_PM_art_NOopen_pairwise_dist.csv"), row.names = TRUE)
       
       # isa
         ambient_PM_art_NOopen_pairwise_isa <- as.data.frame(ambient_PM_art_NOopen_pairwise_isa)
@@ -1221,8 +1216,7 @@ setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/
           ambient_PM_art_NOopen_pairwise_isa
           
         # write the data frame to a csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-          write.csv(ambient_PM_art_NOopen_pairwise_isa, "ambient_PM_art_NOopen_pairwise_isa.csv", row.names = TRUE)
+          write.csv(ambient_PM_art_NOopen_pairwise_isa, file.path(stats_dir,"ambient_PM_art_NOopen_pairwise_isa.csv"), row.names = TRUE)
     
 ```
 ##### Kruskal-Wallis Test (does not include open sites)
@@ -1370,15 +1364,14 @@ for (i in c(1:26)) {
             foliar_PM_kw_pairwise_dist[] <- lapply(foliar_PM_kw_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
             
           # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_kw_pairwise_isa, "foliar_PM_kw_pairwise_isa.csv", row.names = TRUE)
-            write.csv(foliar_PM_kw_pairwise_dist, "foliar_PM_kw_pairwise_dist.csv", row.names = TRUE)
+            write.csv(foliar_PM_kw_pairwise_isa, file.path(stats_dir,"foliar_PM_kw_pairwise_isa.csv"), row.names = TRUE)
+            write.csv(foliar_PM_kw_pairwise_dist, file.path(stats_dir,"foliar_PM_kw_pairwise_dist.csv"), row.names = TRUE)
 
 # Ambient
 
     # create an empty matrix, with a row for each element and a column for each pairwise comparison
         
-        ambient_PM_kw_pairwise_dist <- matrix(data=NA, nrow=44, ncol=23)
+        ambient_PM_kw_pairwise_dist <- matrix(data=NA, nrow=26, ncol=23)
         ambient_PM_kw_pairwise_dist[,1] <- all_element_names
         colnames(ambient_PM_kw_pairwise_dist) <- 
           c("Element",
@@ -1407,7 +1400,7 @@ for (i in c(1:26)) {
           )
         
         
-        ambient_PM_kw_pairwise_isa <- matrix(data=NA, nrow=44, ncol=23)
+        ambient_PM_kw_pairwise_isa <- matrix(data=NA, nrow=26, ncol=23)
         ambient_PM_kw_pairwise_isa[,1] <- all_element_names
         colnames(ambient_PM_kw_pairwise_isa) <- 
           c("Element",
@@ -1435,7 +1428,7 @@ for (i in c(1:26)) {
             "UrbanOpen"
           )
         
-    for (i in c(1:44)) {
+    for (i in c(1:26)) {
       
               element <- all_element_names[i] 
               
@@ -1556,9 +1549,8 @@ for (i in c(1:26)) {
                 ambient_PM_kw_pairwise_dist[] <- lapply(ambient_PM_kw_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
                 
               # write the data frame to a csv
-                setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-                write.csv(ambient_PM_kw_pairwise_isa, "ambient_PM_kw_pairwise_isa.csv", row.names = TRUE)
-                write.csv(ambient_PM_kw_pairwise_dist, "ambient_PM_kw_pairwise_dist.csv", row.names = TRUE)
+                write.csv(ambient_PM_kw_pairwise_isa, file.path(stats_dir,"ambient_PM_kw_pairwise_isa.csv"), row.names = TRUE)
+                write.csv(ambient_PM_kw_pairwise_dist, file.path(stats_dir,"ambient_PM_kw_pairwise_dist.csv"), row.names = TRUE)
             
 ```
 
@@ -1670,8 +1662,7 @@ element <- all_element_names[i]
     all_PM_art_pvals[] <- lapply(all_PM_art_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
     
     # write the data frame to a csv
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-    write.csv(all_PM_art_pvals, "all_PM_art_pvals.csv", row.names = TRUE)
+    write.csv(all_PM_art_pvals, file.path(stats_dir,"all_PM_art_pvals.csv"), row.names = TRUE)
     
 # Individual: Traffic-associated elements
     # by urb_cat_isa and ambient vs foliar
@@ -1686,8 +1677,7 @@ element <- all_element_names[i]
 
 # subsetting just the edge & interior sites
   AllCompxUNESites_NOopen <- subset(AllCompxUNESites, dfe=="0"|dfe=="90")
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
-  write.csv(AllCompxUNESites_NOopen,"AllCompxUNESites_NOopen.csv",row.names=FALSE)
+  write.csv(AllCompxUNESites_NOopen,file.path(data_dir,"AllCompxUNESites_NOopen.csv"),row.names=FALSE)
 
 
   # making matrix to store the pairwise data
@@ -2278,9 +2268,6 @@ element <- all_element_names[i]
     allPM_urbanedge_dist_art_pairwise[] <- lapply(allPM_urbanedge_dist_art_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     allPM_urbaninterior_dist_art_pairwise[] <- lapply(allPM_urbaninterior_dist_art_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     
-    # write the data frame to a csv
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-    
     # combining all these dataframes into one with every ambient vs. foliar comparison
     df_names <- ls(pattern = "^allPM_.*_art_pvals$")
     first_df <- get(df_names[1])
@@ -2303,15 +2290,15 @@ element <- all_element_names[i]
         combined_df[[new_colname]] <- df$Ambient_v_Foliar
       }
     
-    write.csv(combined_df, "allPM_AvF_art_pvals.csv", row.names = TRUE)
-    write.csv(allPM_ruraledge_isa_art_pairwise, "allPM_ruraledge_isa_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_ruralinterior_isa_art_pairwise, "allPM_ruralinterior_isa_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbanedge_isa_art_pairwise, "allPM_urbanedge_isa_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbaninterior_isa_art_pairwise, "allPM_urbaninterior_isa_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_ruraledge_dist_art_pairwise, "allPM_ruraledge_dist_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_ruralinterior_dist_art_pairwise, "allPM_ruralinterior_dist_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbanedge_dist_art_pairwise, "allPM_urbanedge_dist_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbaninterior_dist_art_pairwise, "allPM_urbaninterior_dist_art_pairwise.csv", row.names = TRUE) 
+    write.csv(combined_df, file.path(stats_dir,"allPM_AvF_art_pvals.csv"), row.names = TRUE)
+    write.csv(allPM_ruraledge_isa_art_pairwise, file.path(stats_dir,"allPM_ruraledge_isa_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_ruralinterior_isa_art_pairwise, file.path(stats_dir,"allPM_ruralinterior_isa_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbanedge_isa_art_pairwise, file.path(stats_dir,"allPM_urbanedge_isa_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbaninterior_isa_art_pairwise, file.path(stats_dir,"allPM_urbaninterior_isa_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_ruraledge_dist_art_pairwise, file.path(stats_dir,"allPM_ruraledge_dist_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_ruralinterior_dist_art_pairwise, file.path(stats_dir,"allPM_ruralinterior_dist_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbanedge_dist_art_pairwise, file.path(stats_dir,"allPM_urbanedge_dist_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbaninterior_dist_art_pairwise, file.path(stats_dir,"allPM_urbaninterior_dist_art_pairwise.csv"), row.names = TRUE) 
 ```
 
 ###### Kruskal-Wallis Test
@@ -2705,9 +2692,6 @@ element <- all_element_names[i]
     allPM_urbanedge_dist_kw_pairwise[] <- lapply(allPM_urbanedge_dist_kw_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     allPM_urbaninterior_dist_kw_pairwise[] <- lapply(allPM_urbaninterior_dist_kw_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     
-    # write the data frame to a csv
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-    
     # combining all these dataframes into one with every ambient vs. foliar comparison
     df_names <- ls(pattern = "^allPM_.*_kw_pairwise$")
     first_df <- get(df_names[1])
@@ -2730,15 +2714,15 @@ element <- all_element_names[i]
         combined_df[[new_colname]] <- df$`Ambient - Foliar`
       }
     
-    write.csv(combined_df, "allPM_AvF_kw_pvals.csv", row.names = TRUE)
-    write.csv(allPM_ruraledge_isa_kw_pairwise, "allPM_ruraledge_isa_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_ruralinterior_isa_kw_pairwise, "allPM_ruralinterior_isa_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbanedge_isa_kw_pairwise, "allPM_urbanedge_isa_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbaninterior_isa_kw_pairwise, "allPM_urbaninterior_isa_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_ruraledge_dist_kw_pairwise, "allPM_ruraledge_dist_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_ruralinterior_dist_kw_pairwise, "allPM_ruralinterior_dist_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbanedge_dist_kw_pairwise, "allPM_urbanedge_dist_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_urbaninterior_dist_kw_pairwise, "allPM_urbaninterior_dist_kw_pairwise.csv", row.names = TRUE) 
+    write.csv(combined_df, file.path(stats_dir,"allPM_AvF_kw_pvals.csv"), row.names = TRUE)
+    write.csv(allPM_ruraledge_isa_kw_pairwise, file.path(stats_dir,"allPM_ruraledge_isa_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_ruralinterior_isa_kw_pairwise, file.path(stats_dir,"allPM_ruralinterior_isa_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbanedge_isa_kw_pairwise, file.path(stats_dir,"allPM_urbanedge_isa_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbaninterior_isa_kw_pairwise, file.path(stats_dir,"allPM_urbaninterior_isa_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_ruraledge_dist_kw_pairwise, file.path(stats_dir,"allPM_ruraledge_dist_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_ruralinterior_dist_kw_pairwise, file.path(stats_dir,"allPM_ruralinterior_dist_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbanedge_dist_kw_pairwise, file.path(stats_dir,"allPM_urbanedge_dist_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_urbaninterior_dist_kw_pairwise, file.path(stats_dir,"allPM_urbaninterior_dist_kw_pairwise.csv"), row.names = TRUE)
 ```
 
 ### Edge Type and Edge/Interior
@@ -2848,8 +2832,7 @@ element <- all_element_names[i]
         foliar_PM_art_edgetype_pvals <- as.data.frame(foliar_PM_art_edgetype_pvals)
         
         # write the data frame to a csv
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-        write.csv(foliar_PM_art_edgetype_pvals, "foliar_PM_art_pvals_edgetype.csv", row.names = TRUE)
+        write.csv(foliar_PM_art_edgetype_pvals, file.path(stats_dir,"foliar_PM_art_pvals_edgetype.csv"), row.names = TRUE)
         
     # the other matrices store pairwise comparisons & letters to indicate significance
         
@@ -2869,22 +2852,21 @@ element <- all_element_names[i]
             foliar_PM_art_edgetype_pairwise[] <- lapply(foliar_PM_art_edgetype_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
             
           # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_art_edgetype_pairwise, "foliar_PM_art_edgetype_pairwise.csv", row.names = TRUE)
+            write.csv(foliar_PM_art_edgetype_pairwise, file.path(stats_dir,"foliar_PM_art_edgetype_pairwise.csv"), row.names = TRUE)
             
             
 # Ambient
   
      # create an empty matrix, with a row for each element and a column each for: p-value on edge vs. interior, p-value for road vs nonroad p-value for interaction term
             
-      ambient_PM_art_edgetype_pvals <- matrix(data=NA, nrow=44, ncol=4)
+      ambient_PM_art_edgetype_pvals <- matrix(data=NA, nrow=26, ncol=4)
       colnames(ambient_PM_art_edgetype_pvals) <- c("Element","Edge_vs_Interior","Edge_Type","Interaction")
       ambient_PM_art_edgetype_pvals[,1] <- all_element_names
   
   
   # create an empty matrix, with a row for each element and a column for each pairwise comparison
       
-      ambient_PM_art_edgetype_pairwise <- matrix(data=NA, nrow=44, ncol=22)
+      ambient_PM_art_edgetype_pairwise <- matrix(data=NA, nrow=26, ncol=22)
       ambient_PM_art_edgetype_pairwise[,1] <- all_element_names
       colnames(ambient_PM_art_edgetype_pairwise) <- 
       c("Element",
@@ -2915,7 +2897,7 @@ element <- all_element_names[i]
   
   library(ARTool)
   
-  for (i in c(1:44)) {
+  for (i in c(1:26)) {
   
   element <- all_element_names[i]  
   
@@ -2991,8 +2973,7 @@ element <- all_element_names[i]
       ambient_PM_art_edgetype_pvals[] <- lapply(ambient_PM_art_edgetype_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
       
       # write the data frame to a csv
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-      write.csv(ambient_PM_art_edgetype_pvals, "ambient_PM_art_edgetype_pvals.csv", row.names = TRUE)
+      write.csv(ambient_PM_art_edgetype_pvals, file.path(stats_dir,"ambient_PM_art_edgetype_pvals.csv"), row.names = TRUE)
       
   # the other matrices store pairwise comparisons & letters to indicate significance
       
@@ -3013,8 +2994,7 @@ element <- all_element_names[i]
           ambient_PM_art_edgetype_pairwise
           
         # write the data frame to a csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-          write.csv(ambient_PM_art_edgetype_pairwise, "ambient_PM_art_edgetype_pairwise.csv", row.names = TRUE)
+          write.csv(ambient_PM_art_edgetype_pairwise, file.path(stats_dir,"ambient_PM_art_edgetype_pairwise.csv"), row.names = TRUE)
     
 ```
 
@@ -3256,9 +3236,6 @@ element <- all_element_names[i]
     allPM_roadedge_art_pairwise[] <- lapply(allPM_roadedge_art_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     allPM_roadinterior_art_pairwise[] <- lapply(allPM_roadinterior_art_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     
-    # write the data frame to a csv
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-    
     # combining all these dataframes into one with every ambient vs. foliar comparison
     df_names <- ls(pattern = "^allPM_.*_art_pvals$")
     first_df <- get(df_names[1])
@@ -3282,10 +3259,10 @@ element <- all_element_names[i]
       }
     
     write.csv(combined_df, "allPM_AvF_art_pvals.csv", row.names = TRUE)
-    write.csv(allPM_nonroadedge_art_pairwise, "allPM_nonroadedge_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_nonroadinterior_art_pairwise, "allPM_nonroadinterior_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_roadedge_art_pairwise, "allPM_roadedge_art_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_roadinterior_art_pairwise, "allPM_roadinterior_art_pairwise.csv", row.names = TRUE)
+    write.csv(allPM_nonroadedge_art_pairwise, file.path(stats_dir,"allPM_nonroadedge_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_nonroadinterior_art_pairwise, file.path(stats_dir,"allPM_nonroadinterior_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_roadedge_art_pairwise, file.path(stats_dir,"allPM_roadedge_art_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_roadinterior_art_pairwise, file.path(stats_dir,"allPM_roadinterior_art_pairwise.csv"), row.names = TRUE)
 ```
 
 ##### Kruskal-Wallis Test
@@ -3497,10 +3474,7 @@ element <- all_element_names[i]
     allPM_nonroadinterior_kw_pairwise[] <- lapply(allPM_nonroadinterior_kw_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     allPM_roadedge_kw_pairwise[] <- lapply(allPM_roadedge_kw_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     allPM_roadinterior_kw_pairwise[] <- lapply(allPM_roadinterior_kw_pairwise, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
-    
-    # write the data frame to a csv
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-    
+
     # combining all these dataframes into one with every ambient vs. foliar comparison
     df_names <- ls(pattern = "^allPM_.*_kw_pairwise$")
     first_df <- get(df_names[1])
@@ -3523,11 +3497,11 @@ element <- all_element_names[i]
         combined_df[[new_colname]] <- df$`Ambient - Foliar`
       }
     
-    write.csv(combined_df, "allPM_AvF_kw_edgetype_pvals.csv", row.names = TRUE)
-    write.csv(allPM_nonroadedge_kw_pairwise, "allPM_nonroadedge_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_nonroadinterior_kw_pairwise, "allPM_nonroadinterior_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_roadedge_kw_pairwise, "allPM_roadedge_kw_pairwise.csv", row.names = TRUE)
-    write.csv(allPM_roadinterior_kw_pairwise, "allPM_roadinterior_kw_pairwise.csv", row.names = TRUE)
+    write.csv(combined_df, file.path(stats_dir,"allPM_AvF_kw_edgetype_pvals.csv"), row.names = TRUE)
+    write.csv(allPM_nonroadedge_kw_pairwise, file.path(stats_dir,"allPM_nonroadedge_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_nonroadinterior_kw_pairwise, file.path(stats_dir,"allPM_nonroadinterior_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_roadedge_kw_pairwise, file.path(stats_dir,"allPM_roadedge_kw_pairwise.csv"), row.names = TRUE)
+    write.csv(allPM_roadinterior_kw_pairwise, file.path(stats_dir,"allPM_roadinterior_kw_pairwise.csv"), row.names = TRUE)
 
 ```
 
@@ -3707,9 +3681,8 @@ foliar_element_urbcatxdfe_list_dist[[element]] <- fig_dist
 foliar_element_urbcatxdfe_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Means/Foliar")
 
-ggsave(paste(element,"foliar_urbcatxdfe.png"), plot = figs, width = 4,
+ggsave(paste(element,"foliar_urbcatxdfe.png"), path = file.path(figures_dir,"Elements/Urban vs. Rural/Means/Foliar"), plot = figs, width = 4,
   height = 8, bg = "white")
 }
 
@@ -3902,9 +3875,9 @@ ambient_element_urbcatxdfe_list_isa[[element]] <- fig_isa
 ambient_element_urbcatxdfe_list_dist[[element]] <- fig_dist
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Means/Ambient")
 
-ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
+
+ggsave(paste(element,"ambient_urbcatxdfe.png"), path = file.path(figures_dir,"Elements/Urban vs. Rural/Means/Ambient"), plot = figs, width = 4,
   height = 8, bg = "white")
 }
 
@@ -4010,9 +3983,8 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
   all_element_cat_list_nocap[[element]] <- fig_nocap
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Means")
   
-  ggsave(paste(element,"all_cat.png"), plot = fig, width = 6,
+  ggsave(paste(element,"all_cat.png"), plot = fig, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Means"), width = 6,
     height = 6, bg = "white")
   }
 
@@ -4093,10 +4065,7 @@ for (i in c(1:26)) {
     hjust = 1,
     size = 9)
     
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Means")
-
-ggsave(paste(element,"_urbcatxdfe.png"), plot = fig, width = 9,
+ggsave(paste(element,"_urbcatxdfe.png"), path = file.path(figures_dir,"Elements/Urban vs. Rural/Means"), plot = fig, width = 9,
   height = 8, bg = "white")
 }
 
@@ -4360,9 +4329,7 @@ foliar_element_urbcatxdfe_medians_list_isa_pub[[element]] <- fig_pub
 foliar_element_urbcatxdfe_medians_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians/Foliar")
-
-ggsave(paste(element,"foliar_urbcatxdfe_art.png"), plot = figs, width = 4,
+ggsave(paste(element,"foliar_urbcatxdfe_art.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Foliar"), width = 4,
   height = 8, bg = "white")
 }
 
@@ -4628,9 +4595,8 @@ ambient_element_urbcatxdfe_medians_list_isa_pub[[element]] <- fig_pub
 ambient_element_urbcatxdfe_medians_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians/Ambient")
 
-ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
+ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Ambient"), width = 4,
   height = 8, bg = "white")
 }
 
@@ -4757,9 +4723,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
   all_element_cat_list_median_nocap[[element]] <- fig_nocap
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Medians")
-  
-  ggsave(paste(element,"all_cat.png"), plot = fig, width = 5,
+  ggsave(paste(element,"all_cat.png"), plot = fig, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians"), width = 5,
     height = 5, bg = "white")
   }
 
@@ -4837,9 +4801,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
          (max(summary$upper)+(max(summary$upper)-min(summary$lower))*0.1))
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Medians/Urb Cat & AvF")
-  
-  ggsave(paste(element,"all_cat.png"), plot = fig, width = 5,
+  ggsave(paste(element,"all_cat.png"), plot = fig, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians/Urb Cat & AvF"), width = 5,
     height = 5, bg = "white")
   }
 ```
@@ -4919,10 +4881,7 @@ for (i in c(1:26)) {
     hjust = 1,
     size = 9)
     
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians")
-
-ggsave(paste(element,"_urbcatxdfe.png"), plot = fig, width = 9,
+ggsave(paste(element,"_urbcatxdfe.png"), plot = fig, width = 9, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians"),
   height = 8, bg = "white")
 }
     
@@ -5187,9 +5146,7 @@ foliar_element_urbcatxdfe_medians_list_isa_pub[[element]] <- fig_pub
 foliar_element_urbcatxdfe_medians_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians/Foliar")
-
-ggsave(paste(element,"foliar_urbcatxdfe_art.png"), plot = figs, width = 4,
+ggsave(paste(element,"foliar_urbcatxdfe_art.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Foliar"), width = 4,
   height = 8, bg = "white")
 }
 
@@ -5455,9 +5412,7 @@ ambient_element_urbcatxdfe_medians_list_isa_pub[[element]] <- fig_pub
 ambient_element_urbcatxdfe_medians_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians/Ambient")
-
-ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
+ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Ambient"), width = 4,
   height = 8, bg = "white")
 }
 
@@ -5584,9 +5539,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
   all_element_cat_list_median_nocap[[element]] <- fig_nocap
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Medians")
-  
-  ggsave(paste(element,"all_cat.png"), plot = fig, width = 5,
+  ggsave(paste(element,"all_cat.png"), path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians"), plot = fig, width = 5,
     height = 5, bg = "white")
   }
 
@@ -5664,9 +5617,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, width = 4,
          (max(summary$upper)+(max(summary$upper)-min(summary$lower))*0.1))
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Medians/Urb Cat & AvF")
-  
-  ggsave(paste(element,"all_cat.png"), plot = fig, width = 5,
+  ggsave(paste(element,"all_cat.png"), plot = fig, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians/Urb Cat & AvF"), width = 5,
     height = 5, bg = "white")
   }
 ```
@@ -5746,10 +5697,7 @@ for (i in c(1:26)) {
     hjust = 1,
     size = 9)
     
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians")
-
-ggsave(paste(element,"_urbcatxdfe.png"), plot = fig, width = 9,
+ggsave(paste(element,"_urbcatxdfe.png"), plot = fig,  path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians"), width = 9,
   height = 8, bg = "white")
 }
     
@@ -6061,9 +6009,7 @@ foliar_element_urbcatxdfe_medians_list_isa_pub[[element]] <- fig_pub
 foliar_element_urbcatxdfe_medians_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians/Foliar")
-
-ggsave(paste(element,"foliar_urbcatxdfe_art_jit.png"), plot = figs, width = 4,
+ggsave(paste(element,"foliar_urbcatxdfe_art_jit.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Foliar"), width = 4,
   height = 8, bg = "white")
 }
 
@@ -6377,9 +6323,7 @@ ambient_element_urbcatxdfe_medians_list_isa_pub[[element]] <- fig_pub
 ambient_element_urbcatxdfe_medians_list[[element]] <- figs  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians/Ambient")
-
-ggsave(paste(element,"ambient_urbcatxdfe_jit.png"), plot = figs, width = 4,
+ggsave(paste(element,"ambient_urbcatxdfe_jit.png"), path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Ambient"), plot = figs, width = 4,
   height = 8, bg = "white")
 }
 
@@ -6535,9 +6479,7 @@ ggsave(paste(element,"ambient_urbcatxdfe_jit.png"), plot = figs, width = 4,
   all_element_cat_list_median_nocap[[element]] <- fig_nocap
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Medians")
-  
-  ggsave(paste(element,"all_cat_jit.png"), plot = fig, width = 5,
+  ggsave(paste(element,"all_cat_jit.png"), plot = fig, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians"), width = 5,
     height = 5, bg = "white")
   }
 
@@ -6615,9 +6557,7 @@ ggsave(paste(element,"ambient_urbcatxdfe_jit.png"), plot = figs, width = 4,
          (max(summary$upper)+(max(summary$upper)-min(summary$lower))*0.1))
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar/Medians/Urb Cat & AvF")
-  
-  ggsave(paste(element,"all_cat.png"), plot = fig, width = 5,
+  ggsave(paste(element,"all_cat.png"), plot = fig, width = 5, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians/Urb Cat & AvF"),
     height = 5, bg = "white")
   }
 ```
@@ -6697,10 +6637,7 @@ for (i in c(1:26)) {
     hjust = 1,
     size = 9)
     
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Urban vs. Rural/Medians")
-
-ggsave(paste(element,"_urbcatxdfe_jit.png"), plot = fig, width = 9,
+ggsave(paste(element,"_urbcatxdfe_jit.png"), plot = fig, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians"), width = 9,
   height = 8, bg = "white")
 }
     
@@ -6768,14 +6705,11 @@ element <- element_names[i]
 foliar_element_site_list[[element]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/By Site")
-
-ggsave(paste(element,"foliar_sites.png"), plot = fig, width = 8,
+ggsave(paste(element,"foliar_sites.png"), plot = fig, path = file.path(figures_dir,"Elements/By Site"), width = 8,
   height = 4, bg = "white")
 }
 
 ```
-
 
 #### Ambient
 ```{r}
@@ -6836,9 +6770,7 @@ element <- element_names[i]
 ambient_element_site_list[[element]] <- fig
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/By Site")
-
-ggsave(paste(element,"ambient_sites.png"), plot = fig, width = 8,
+ggsave(paste(element,"ambient_sites.png"), path = file.path(figures_dir,"Elements/By Site"), plot = fig, width = 8,
   height = 4, bg = "white")
 }
 
@@ -6864,10 +6796,8 @@ for (i in c(1:26)) {
                              # ),
                            # ncol = 1,
                            # rel_heights = c(1, 0.08))
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/By Site")
 
-ggsave(paste(element,"_sites.png"), plot = fig, width = 8,
+ggsave(paste(element,"_sites.png"), plot = fig, path = file.path(figures_dir,"Elements/By Site"), width = 8,
   height = 8, bg = "white")
 }
     
@@ -6946,17 +6876,13 @@ fig <-
 foliar_element_edgetypexdfe_list[[i-11]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Foliar")
-
-ggsave(paste(element,"foliar_edgetypexdfe.png"), plot = fig, width = 4,
+ggsave(paste(element,"foliar_edgetypexdfe.png"), plot = fig, path = file.path(figures_dir,"Elements/Road vs. Nonroad/Foliar"), width = 4,
   height = 4, bg = "white")
 }
 
 foliar_elements <- grid.arrange(grobs = foliar_element_edgetypexdfe_list, ncol = 6)
 
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Foliar")
-
-ggsave("foliar_elements_edgetypexdfe.png", plot = foliar_elements, width = 22,   height = 22, bg = "white")
+ggsave("foliar_elements_edgetypexdfe.png", plot = foliar_elements, path = file.path(figures_dir,"Elements/Road vs. Nonroad/Foliar"), width = 22, height = 22, bg = "white")
 
 ```
 
@@ -7033,9 +6959,7 @@ fig <-
         axis.title.y = element_text(color = "black",size=15))
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Ambient")
-
-ggsave(paste(element,"ambient_edgetypexdfe.png"), plot = fig, width = 4,
+ggsave(paste(element,"ambient_edgetypexdfe.png"), path = file.path(figures_dir,"Elements/Road vs. Nonroad/Ambient"), plot = fig, width = 4,
   height = 4, bg = "white")
 
 ambient_element_edgetypexdfe_list[[i-4]] <- fig  # Store each figure in the list we made
@@ -7043,9 +6967,7 @@ ambient_element_edgetypexdfe_list[[i-4]] <- fig  # Store each figure in the list
 
 ambient_elements <- grid.arrange(grobs = ambient_element_edgetypexdfe_list, ncol = 6)
 
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Ambient")
-
-ggsave("ambient_elements_edgetypexdfe.png", plot = ambient_elements, width = 30,   height = 30, bg = "white")
+ggsave("ambient_elements_edgetypexdfe.png", path = file.path(figures_dir,"Elements/Road vs. Nonroad/Ambient"), plot = ambient_elements, width = 30,   height = 30, bg = "white")
 
 ```
 
@@ -7157,9 +7079,7 @@ element <- element_names[i]
 foliar_element_edgetypexdfe_medians_list[[element]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Medians/Foliar")
-
-ggsave(paste(element,"foliar_edgetypexdfe.png"), plot = fig, width = 4,
+ggsave(paste(element,"foliar_edgetypexdfe.png"), path = file.path(figures_dir,"Elements/Road vs. Nonroad/Medians/Foliar"), plot = fig, width = 4,
   height = 8, bg = "white")
 }
 
@@ -7273,9 +7193,7 @@ element <- element_names[i]
 ambient_element_edgetypexdfe_medians_list[[element]] <- fig
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Medians/Ambient")
-
-ggsave(paste(element,"ambient_edgetypexdfe.png"), plot = fig, width = 4,
+ggsave(paste(element,"ambient_edgetypexdfe.png"), path = file.path(figures_dir,"Elements/Road vs. Nonroad/Medians/Ambient"), plot = fig, width = 4,
   height = 8, bg = "white")
 }
 
@@ -7296,10 +7214,8 @@ for (i in c(1:26)) {
                      rel_widths = c(1, 1, 0.3, 0.6),
                      labels=NULL,ncol=4)
 
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Road vs. Nonroad/Medians")
 
-ggsave(paste(element,"_edgetypexdfe.png"), plot = fig, width = 12,
+ggsave(paste(element,"_edgetypexdfe.png"), path = file.path(figures_dir,"Elements/Road vs. Nonroad/Medians"), plot = fig, width = 12,
   height = 4, bg = "white")
 }
     
@@ -7572,9 +7488,7 @@ fol_element_isa_list_dfe[[element]] <- fol_element_ISA_dfe
 amb_element_isa_list_dfe[[element]] <- amb_element_ISA_dfe
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/ISA")
-
-ggsave(paste(element,"_ISA.png"), plot = figs, width = 20,
+ggsave(paste(element,"_ISA.png"), path = file.path(figures_dir,"Elements/ISA"), plot = figs, width = 20,
   height = 12, bg = "white")
 
 }
@@ -7712,9 +7626,8 @@ figs <- plot_grid(amb_figs_labeled,
 
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/ISA")
 
-ggsave(paste(element,"_ISA_sitemeans.png"), plot = figs, width = 10,
+ggsave(paste(element,"_ISA_sitemeans.png"), path = file.path(figures_dir,"Elements/ISA"), plot = figs, width = 10,
   height = 6, bg = "white")
 
 }
@@ -7990,9 +7903,8 @@ amb_element_dist_list_dfe[[element]] <- amb_element_dist_dfe
 
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Distance to Boston")
 
-ggsave(paste(element,"_dist.png"), plot = figs, width = 20,
+ggsave(paste(element,"_dist.png"), path = file.path(figures_dir,"Elements/Distance to Boston"), plot = figs, width = 20,
   height = 12, bg = "white")
 
 }
@@ -8129,9 +8041,7 @@ figs <- plot_grid(amb_figs_labeled,
                   )
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Distance to Boston")
-
-ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
+ggsave(paste(element,"_dist_sitemeans.png"), path = file.path(figures_dir,"Elements/Distance to Boston"), plot = figs, width = 10,
   height = 6, bg = "white")
 
 }
@@ -8162,9 +8072,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
           foliar_histograms <- grid.arrange(grobs = foliar_histograms_list, ncol = 6)
         
     # printing figure
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Normality")
-    
-          ggsave("foliar_histograms.png", plot = foliar_histograms, width = 20,
+          ggsave("foliar_histograms.png", path = file.path(figures_dir,"Normality"), plot = foliar_histograms, width = 20,
                                                 height = 20, bg = "white")
 
 # Q-Q plots of each element
@@ -8186,9 +8094,8 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
       foliar_QQplots <- grid.arrange(grobs = foliar_QQ_plot_list, ncol = 6)
     
     # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Normality")
 
-      ggsave("foliar_QQplots.png", plot = foliar_QQplots, width = 20,
+      ggsave("foliar_QQplots.png", plot = foliar_QQplots, path = file.path(figures_dir,"Normality"), width = 20,
                                             height = 20, bg = "white")
 
 # Shapiro-Wilks statistics
@@ -8218,8 +8125,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
       View(foliar_PMcomp_norm_test)
       
       # save it as a .csv
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-      write.csv(foliar_PMcomp_norm_test, "foliar_PMcomp_norm_test.csv", row.names = FALSE)
+      write.csv(foliar_PMcomp_norm_test, file.path(stats_dir,"foliar_PMcomp_norm_test.csv"), row.names = FALSE)
 
 # conclusion: not one of these variables is even close to being normal
       
@@ -8246,10 +8152,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
           ambient_histograms <- grid.arrange(grobs = ambient_histograms_list, ncol = 6)
         
     # printing figure
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Normality")
-    
-          ggsave("ambient_histograms.png", plot = ambient_histograms, width = 20,
-                                                height = 20, bg = "white")
+          ggsave("ambient_histograms.png", plot = ambient_histograms, width = 20, path = file.path(figures_dir,"Normality"), height = 20, bg = "white")
 
 # Q-Q plots of each element
       
@@ -8270,9 +8173,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
       ambient_QQplots <- grid.arrange(grobs = ambient_QQ_plot_list, ncol = 6)
     
     # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Normality")
-
-      ggsave("ambient_QQplots.png", plot = ambient_QQplots, width = 20,
+      ggsave("ambient_QQplots.png", plot = ambient_QQplots, path = file.path(figures_dir,"Normality"), width = 20,
                                             height = 20, bg = "white")
 
 # Shapiro-Wilks statistics
@@ -8302,8 +8203,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
       View(ambient_PMcomp_norm_test)
       
       #save it as a .csv
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-      write.csv(ambient_PMcomp_norm_test, "ambient_PMcomp_norm_test.csv", row.names = FALSE)
+      write.csv(ambient_PMcomp_norm_test, file.path(stats.dir,"ambient_PMcomp_norm_test.csv"), row.names = FALSE)
 ```
 
 ## Standardizing Axes (do NOT run every time, only when needed)
@@ -8326,8 +8226,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
     axes_limits <- transform(axes_limits, ymax_dist = pmax(ymax_dist_f,ymax_dist_a))
     
     # save it as a .csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
-          write.csv(axes_limits, "axes_limits.csv", row.names = FALSE)
+          write.csv(axes_limits, file.path(stats_dir,"axes_limits.csv") row.names = FALSE)
           
 # medians          
           
@@ -8346,8 +8245,7 @@ ggsave(paste(element,"_dist_sitemeans.png"), plot = figs, width = 10,
     axes_limits_medians <- transform(axes_limits_medians, ymax_dist = pmax(ymax_dist_f,ymax_dist_a))
     
     # save it as a .csv
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/csvs")
-          write.csv(axes_limits_medians, "axes_limits_medians.csv", row.names = FALSE)
+          write.csv(axes_limits_medians, file.path(stats_dir,"axes_limits_medians.csv"), row.names = FALSE)
 
 ```
 
@@ -8480,9 +8378,7 @@ figX <- plot_grid(panelA, panelB,
                   label_size = 25)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figX.png", plot = figX, width = 12,
+ggsave("figX.png", plot = figX, path = file.path(figures_dir,"For Pub"), width = 12,
   height = 10, bg = "white")
 
 ```
@@ -8628,9 +8524,7 @@ figY <- plot_grid(panelA, panelB,
                   )
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figY.png", plot = figY, width = 12,
+ggsave("figY.png", plot = figY, path = file.path(figures_dir,"For Pub"), width = 12,
   height = 10, bg = "white")
 
 ```
@@ -8671,9 +8565,7 @@ figZ <- plot_grid(all_element_cat_list_median_nocap$C,
                   label_size = 25)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figZ.png", plot = figZ, width = 6,
+ggsave("figZ.png", plot = figZ, path = file.path(figures_dir,"For Pub"), width = 6,
   height = 10, bg = "white")
 
 ```
@@ -8709,9 +8601,7 @@ figW <- plot_grid(panelA,
                   )
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figW.png", plot = figW, width = 10,
+ggsave("figW.png", plot = figW, path = file.path(figures_dir,"For Pub"), width = 10,
   height = 5, bg = "white")
 
 ```
@@ -8773,9 +8663,7 @@ figV <- plot_grid(
                   label_size = 22)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figV.png", plot = figV, width = 16,
+ggsave("figV.png", plot = figV, path = file.path(figures_dir,"For Pub"), width = 16,
   height = 9, bg = "white")
 
 ```
@@ -8793,9 +8681,7 @@ figU <- plot_grid(LeafSEM_ANOVA$stomatal_density,
                   label_size = 22)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figU.png", plot = figU, width = 10,
+ggsave("figU.png", plot = figU, path = file.path(figures_dir,"For Pub"), width = 10,
   height = 12, bg = "white")
 
 ```
@@ -8856,9 +8742,7 @@ figT <- plot_grid(hyphal_conc_fg_plots_dfe$litter_sap,
                   ncol=2)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figT.png", plot = figT, width = 12,
+ggsave("figT.png", plot = figT, path = file.path(figures_dir,"For Pub"), width = 12,
   height = 12, bg = "white")
 
 ```
@@ -8871,9 +8755,7 @@ ggsave("figT.png", plot = figT, width = 12,
 figS <- NOx_O3_PM_fig 
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
-
-ggsave("figS.png", plot = figS, width = 20,
+ggsave("figS.png", plot = figS, path = file.path(figures_dir,"For Pub"), width = 20,
   height = 14, bg = "white")
 ```
 
@@ -8899,9 +8781,8 @@ figR <- plot_grid(amb_element_dist_list_dfe$Na,
                   ncol=2)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/For Pub")
 
-ggsave("figR.png", plot = figR, width = 12,
+ggsave("figR.png", plot = figR, path = file.path(figures_dir,"For Pub"), width = 12,
   height = 10, bg = "white")
 
 ```
@@ -8948,10 +8829,9 @@ ggsave("figR.png", plot = figR, width = 12,
             theme(text = element_text(size = 30)) 
         
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-          ggsave("foliar_PC1_loadings.png", plot = foliar_PC1_loadings, width = 5,
+          ggsave("foliar_PC1_loadings.png", path = file.path(figures_dir,"PCA/Individual Elements"), plot = foliar_PC1_loadings, width = 5,
             height = 10, bg = "white")
-          ggsave("foliar_PC2_loadings.png", plot = foliar_PC2_loadings, width = 5,
+          ggsave("foliar_PC2_loadings.png", path = file.path(figures_dir,"PCA/Individual Elements"), plot = foliar_PC2_loadings, width = 5,
             height = 10, bg = "white")
                   
  # making a data frame with the loadings, sites, and site characteristics
@@ -8966,8 +8846,7 @@ ggsave("figR.png", plot = figR, width = 12,
     theme_minimal() 
     
     # printing figures
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-      ggsave("foliar_PCA_elementsonly.png", plot = foliar_PCA_elementsonly, width = 5,
+      ggsave("foliar_PCA_elementsonly.png", plot = foliar_PCA_elementsonly, path = file.path(figures_dir,"PCA/Individual Elements"), width = 5,
             height = 5, bg = "white")
 
 # PCA Plots (UNE Sites)
@@ -8988,8 +8867,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_urb_cat_ISA.png", plot = foliar_PCA_by_site_urb_cat_ISA, width = 7,
+        ggsave("foliar_PCA_by_site_urb_cat_ISA.png", plot = foliar_PCA_by_site_urb_cat_ISA, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")
 
  # colored by urb_cat_dist             
@@ -9002,8 +8880,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_urb_cat_dist.png", plot = foliar_PCA_by_site_urb_cat_dist, width = 7,
+        ggsave("foliar_PCA_by_site_urb_cat_dist.png", plot = foliar_PCA_by_site_urb_cat_dist, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")        
 
  # colored by edge_type             
@@ -9017,8 +8894,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_edge_type.png", plot = foliar_PCA_by_site_edge_type, width = 7,
+        ggsave("foliar_PCA_by_site_edge_type.png", plot = foliar_PCA_by_site_edge_type, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")         
 
  # colored by ISA             
@@ -9032,8 +8908,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_ISA.png", plot = foliar_PCA_by_site_ISA, width = 7,
+        ggsave("foliar_PCA_by_site_ISA.png", plot = foliar_PCA_by_site_ISA, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")          
 
  # colored by distance_to_boston             
@@ -9047,8 +8922,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_distance_to_boston.png", plot = foliar_PCA_by_site_distance_to_boston, width = 7,
+        ggsave("foliar_PCA_by_site_distance_to_boston.png", path = file.path(figures_dir,"PCA/Individual Elements"), plot = foliar_PCA_by_site_distance_to_boston, width = 7,
           height = 6, bg = "white")   
                                                       
 # PCA Plots (UNE Sites + Distance from Edge)
@@ -9066,8 +8940,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_dfe.png", plot = foliar_PCA_by_site_dfe, width = 7,
+        ggsave("foliar_PCA_by_site_dfe.png", plot = foliar_PCA_by_site_dfe, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")      
             
 # PCA biplot (by site types)
@@ -9081,9 +8954,7 @@ ggsave("figR.png", plot = figR, width = 12,
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("foliar_PCA_biplot_site_type.png", plot = foliar_PCA_biplot_site_type, width = 10,
+      ggsave("foliar_PCA_biplot_site_type.png", path = file.path(figures_dir,"PCA/Individual Elements"),plot = foliar_PCA_biplot_site_type, width = 10,
         height = 10, bg = "white")
       
 # PCA biplot (with individual sites)
@@ -9097,9 +8968,7 @@ ggsave("figR.png", plot = figR, width = 12,
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("foliar_PCA_biplot_site_name.png", plot = foliar_PCA_biplot_site_name, width = 10,
+      ggsave("foliar_PCA_biplot_site_name.png", path = file.path(figures_dir,"PCA/Individual Elements"), plot = foliar_PCA_biplot_site_name, width = 10,
         height = 10, bg = "white")
             
 
@@ -9177,10 +9046,9 @@ ggsave("figR.png", plot = figR, width = 12,
             theme(text = element_text(size = 30))  
       
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-          ggsave("ambient_PC1_loadings.png", plot = ambient_PC1_loadings, width = 5,
+          ggsave("ambient_PC1_loadings.png", plot = ambient_PC1_loadings, path = file.path(figures_dir,"PCA/Individual Elements"), width = 5,
             height = 12, bg = "white")
-          ggsave("ambient_PC2_loadings.png", plot = ambient_PC2_loadings, width = 5,
+          ggsave("ambient_PC2_loadings.png", plot = ambient_PC2_loadings, path = file.path(figures_dir,"PCA/Individual Elements"), width = 5,
             height = 12, bg = "white")
                   
  # making a data frame with the loadings, sites, and site characteristics
@@ -9195,8 +9063,7 @@ ggsave("figR.png", plot = figR, width = 12,
     theme_minimal()  # Apply minimal theme
     
     # printing figures
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-      ggsave("ambient_PCA_elementsonly.png", plot = ambient_PCA_elementsonly, width = 5,
+      ggsave("ambient_PCA_elementsonly.png", plot = ambient_PCA_elementsonly, path = file.path(figures_dir,"PCA/Individual Elements"), width = 5,
             height = 5, bg = "white")
 
 # PCA Plots (UNE Sites)
@@ -9217,8 +9084,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_urb_cat_ISA.png", plot = ambient_PCA_by_site_urb_cat_ISA, width = 7,
+        ggsave("ambient_PCA_by_site_urb_cat_ISA.png", plot = ambient_PCA_by_site_urb_cat_ISA, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")
 
  # colored by urb_cat_dist             
@@ -9231,8 +9097,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_urb_cat_dist.png", plot = ambient_PCA_by_site_urb_cat_dist, width = 7,
+        ggsave("ambient_PCA_by_site_urb_cat_dist.png", plot = ambient_PCA_by_site_urb_cat_dist, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")        
 
  # colored by edge_type             
@@ -9246,8 +9111,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_edge_type.png", plot = ambient_PCA_by_site_edge_type, width = 7,
+        ggsave("ambient_PCA_by_site_edge_type.png", plot = ambient_PCA_by_site_edge_type, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")         
 
  # colored by ISA             
@@ -9261,8 +9125,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_ISA.png", plot = ambient_PCA_by_site_ISA, width = 7,
+        ggsave("ambient_PCA_by_site_ISA.png", plot = ambient_PCA_by_site_ISA, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")          
 
  # colored by distance_to_boston             
@@ -9276,8 +9139,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_distance_to_boston.png", plot = ambient_PCA_by_site_distance_to_boston, width = 7,
+        ggsave("ambient_PCA_by_site_distance_to_boston.png", plot = ambient_PCA_by_site_distance_to_boston, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")   
                                                       
 # PCA Plots (UNE Sites + Distance from Edge)
@@ -9295,8 +9157,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_dfe.png", plot = ambient_PCA_by_site_dfe, width = 7,
+        ggsave("ambient_PCA_by_site_dfe.png", plot = ambient_PCA_by_site_dfe, path = file.path(figures_dir,"PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")      
             
 # PCA biplot (by site types)
@@ -9310,9 +9171,7 @@ ggsave("figR.png", plot = figR, width = 12,
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("ambient_PCA_biplot_site_type.png", plot = ambient_PCA_biplot_site_type, width = 10,
+      ggsave("ambient_PCA_biplot_site_type.png", plot = ambient_PCA_biplot_site_type, path = file.path(figures_dir,"PCA/Individual Elements"), width = 10,
         height = 10, bg = "white")
       
 # PCA biplot (with individual sites)
@@ -9326,9 +9185,7 @@ ggsave("figR.png", plot = figR, width = 12,
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("ambient_PCA_biplot_site_name.png", plot = ambient_PCA_biplot_site_name, width = 10,
+      ggsave("ambient_PCA_biplot_site_name.png", plot = ambient_PCA_biplot_site_name, path = file.path(figures_dir,"PCA/Individual Elements"), width = 10,
         height = 10, bg = "white")
 ```
 
@@ -9374,10 +9231,9 @@ ggsave("figR.png", plot = figR, width = 12,
             theme(text = element_text(size = 30)) 
         
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-          ggsave("foliar_PC1_loadings_grouped.png", plot = foliar_PC1_loadings, width = 5,
+          ggsave("foliar_PC1_loadings_grouped.png", plot = foliar_PC1_loadings, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 5,
             height = 10, bg = "white")
-          ggsave("foliar_PC2_loadings_grouped.png", plot = foliar_PC2_loadings, width = 5,
+          ggsave("foliar_PC2_loadings_grouped.png", plot = foliar_PC2_loadings, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 5,
             height = 10, bg = "white")
                   
  # making a data frame with the loadings, sites, and site characteristics
@@ -9392,8 +9248,7 @@ ggsave("figR.png", plot = figR, width = 12,
     theme_minimal()  # Apply minimal theme
     
     # printing figures
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-      ggsave("foliar_PCA_elementsonly_grouped.png", plot = foliar_PCA_elementsonly, width = 5,
+      ggsave("foliar_PCA_elementsonly_grouped.png", plot = foliar_PCA_elementsonly, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 5,
             height = 5, bg = "white")
 
 # PCA Plots (UNE Sites)
@@ -9414,8 +9269,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("foliar_PCA_by_site_urb_cat_ISA_grouped.png", plot = foliar_PCA_by_site_urb_cat_ISA, width = 7,
+        ggsave("foliar_PCA_by_site_urb_cat_ISA_grouped.png", plot = foliar_PCA_by_site_urb_cat_ISA, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")
 
  # colored by urb_cat_dist             
@@ -9428,8 +9282,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("foliar_PCA_by_site_urb_cat_dist_grouped.png", plot = foliar_PCA_by_site_urb_cat_dist, width = 7,
+        ggsave("foliar_PCA_by_site_urb_cat_dist_grouped.png", plot = foliar_PCA_by_site_urb_cat_dist, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")        
 
  # colored by edge_type             
@@ -9443,8 +9296,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("foliar_PCA_by_site_edge_type_grouped.png", plot = foliar_PCA_by_site_edge_type, width = 7,
+        ggsave("foliar_PCA_by_site_edge_type_grouped.png", plot = foliar_PCA_by_site_edge_type, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")         
 
  # colored by ISA             
@@ -9458,8 +9310,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("foliar_PCA_by_site_ISA_grouped.png", plot = foliar_PCA_by_site_ISA, width = 7,
+        ggsave("foliar_PCA_by_site_ISA_grouped.png", plot = foliar_PCA_by_site_ISA, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")          
 
  # colored by distance_to_boston             
@@ -9473,8 +9324,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("foliar_PCA_by_site_distance_to_boston_grouped.png", plot = foliar_PCA_by_site_distance_to_boston, width = 7,
+        ggsave("foliar_PCA_by_site_distance_to_boston_grouped.png", plot = foliar_PCA_by_site_distance_to_boston, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")   
                                                       
 # PCA Plots (UNE Sites + Distance from Edge)
@@ -9492,8 +9342,7 @@ ggsave("figR.png", plot = figR, width = 12,
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("foliar_PCA_by_site_dfe_grouped.png", plot = foliar_PCA_by_site_dfe, width = 7,
+        ggsave("foliar_PCA_by_site_dfe_grouped.png", plot = foliar_PCA_by_site_dfe, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")      
             
 # PCA biplot (by site types)
@@ -9507,9 +9356,7 @@ ggsave("figR.png", plot = figR, width = 12,
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-
-      ggsave("foliar_PCA_biplot_site_type_grouped.png", plot = foliar_PCA_biplot_site_type, width = 10,
+      ggsave("foliar_PCA_biplot_site_type_grouped.png", plot = foliar_PCA_biplot_site_type, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 10,
         height = 10, bg = "white")
       
 # PCA biplot (with individual sites)
@@ -9523,9 +9370,8 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         axis.title.y = element_text(color = "black",size=35))  
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
 
-      ggsave("foliar_PCA_biplot_site_name_grouped.png", plot = foliar_PCA_biplot_site_name, width = 10,
+      ggsave("foliar_PCA_biplot_site_name_grouped.png", plot = foliar_PCA_biplot_site_name, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 10,
         height = 10, bg = "white")
       
 ```
@@ -9572,10 +9418,9 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
             theme(text = element_text(size = 30)) 
         
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-          ggsave("ambient_PC1_loadings_grouped.png", plot = ambient_PC1_loadings, width = 5,
+          ggsave("ambient_PC1_loadings_grouped.png", plot = ambient_PC1_loadings, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 5,
             height = 10, bg = "white")
-          ggsave("ambient_PC2_loadings_grouped.png", plot = ambient_PC2_loadings, width = 5,
+          ggsave("ambient_PC2_loadings_grouped.png", plot = ambient_PC2_loadings, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 5,
             height = 10, bg = "white")
                   
  # making a data frame with the loadings, sites, and site characteristics
@@ -9590,8 +9435,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
     theme_minimal()  # Apply minimal theme
     
     # printing figures
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-      ggsave("ambient_PCA_elementsonly_grouped.png", plot = ambient_PCA_elementsonly, width = 5,
+      ggsave("ambient_PCA_elementsonly_grouped.png", plot = ambient_PCA_elementsonly, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 5,
             height = 5, bg = "white")
 
 # PCA Plots (UNE Sites)
@@ -9612,8 +9456,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("ambient_PCA_by_site_urb_cat_ISA_grouped.png", plot = ambient_PCA_by_site_urb_cat_ISA, width = 7,
+        ggsave("ambient_PCA_by_site_urb_cat_ISA_grouped.png", plot = ambient_PCA_by_site_urb_cat_ISA, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")
 
  # colored by urb_cat_dist             
@@ -9626,8 +9469,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("ambient_PCA_by_site_urb_cat_dist_grouped.png", plot = ambient_PCA_by_site_urb_cat_dist, width = 7,
+        ggsave("ambient_PCA_by_site_urb_cat_dist_grouped.png", plot = ambient_PCA_by_site_urb_cat_dist, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")        
 
  # colored by edge_type             
@@ -9641,8 +9483,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("ambient_PCA_by_site_edge_type_grouped.png", plot = ambient_PCA_by_site_edge_type, width = 7,
+        ggsave("ambient_PCA_by_site_edge_type_grouped.png", plot = ambient_PCA_by_site_edge_type, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")         
 
  # colored by ISA             
@@ -9656,8 +9497,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("ambient_PCA_by_site_ISA_grouped.png", plot = ambient_PCA_by_site_ISA, width = 7,
+        ggsave("ambient_PCA_by_site_ISA_grouped.png", plot = ambient_PCA_by_site_ISA, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")          
 
  # colored by distance_to_boston             
@@ -9671,8 +9511,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("ambient_PCA_by_site_distance_to_boston_grouped.png", plot = ambient_PCA_by_site_distance_to_boston, width = 7,
+        ggsave("ambient_PCA_by_site_distance_to_boston_grouped.png", plot = ambient_PCA_by_site_distance_to_boston, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")   
                                                       
 # PCA Plots (UNE Sites + Distance from Edge)
@@ -9690,8 +9529,7 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-        ggsave("ambient_PCA_by_site_dfe_grouped.png", plot = ambient_PCA_by_site_dfe, width = 7,
+        ggsave("ambient_PCA_by_site_dfe_grouped.png", plot = ambient_PCA_by_site_dfe, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 7,
           height = 6, bg = "white")      
             
 # PCA biplot (by site types)
@@ -9705,9 +9543,8 @@ foliar_PCA_biplot_site_name <- ggbiplot(FoliarPMPCA, groups = Leaf_Labels$site_n
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
 
-      ggsave("ambient_PCA_biplot_site_type_grouped.png", plot = ambient_PCA_biplot_site_type, width = 10,
+      ggsave("ambient_PCA_biplot_site_type_grouped.png", plot = ambient_PCA_biplot_site_type, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 10,
         height = 10, bg = "white")
       
 # PCA biplot (with individual sites)
@@ -9721,9 +9558,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Grouped Elements")
-
-      ggsave("ambient_PCA_biplot_site_name_grouped.png", plot = ambient_PCA_biplot_site_name, width = 10,
+      ggsave("ambient_PCA_biplot_site_name_grouped.png", plot = ambient_PCA_biplot_site_name, path = file.path(figures_dir,"PCA/Grouped Elements"), width = 10,
         height = 10, bg = "white")
 ```
 ## Ambient vs. Foliar
@@ -9769,10 +9604,9 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
             theme(text = element_text(size = 30))
     
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Ambient vs. Foliar")
-          ggsave("all_PC1_loadings.png", plot = all_PC1_loadings, width = 5,
+          ggsave("all_PC1_loadings.png", plot = all_PC1_loadings, path = file.path(figures_dir,"PCA/Ambient vs. Foliar"), width = 5,
             height = 12, bg = "white")
-          ggsave("all_PC2_loadings.png", plot = all_PC2_loadings, width = 5,
+          ggsave("all_PC2_loadings.png", plot = all_PC2_loadings, path = file.path(figures_dir,"PCA/Ambient vs. Foliar"), width = 5,
             height = 12, bg = "white")
 
         # making a data frame with the loadings, sites, and site characteristics
@@ -9788,10 +9622,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         axis.text.y = element_text(color = "black",size=35),
         axis.title.y = element_text(color = "black",size=35)) 
 
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Ambient vs. Foliar")
-
-      ggsave("all_PCA_biplot_site_name.png", plot = all_PCA_biplot_site_name, width = 10,
-        height = 10, bg = "white")
+      ggsave("all_PCA_biplot_site_name.png", plot = all_PCA_biplot_site_name, path = file.path(figures_dir,"PCA/Ambient vs. Foliar"), width = 10, height = 10, bg = "white")
    
   # PCA Plot (Elements)
     
@@ -9800,11 +9631,8 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
     labs(x = "PC1", y = "PC2") + 
     geom_text(data = loadings_df, aes(label = rownames(loadings_df)), hjust = 0, vjust = 0) +
     theme_minimal()  
-    
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Ambient vs. Foliar")
 
-      ggsave("all_PCA_elementsonly.png", plot = all_PCA_elementsonly, width = 10,
-        height = 10, bg = "white")
+      ggsave("all_PCA_elementsonly.png", plot = all_PCA_elementsonly, width = 10, path = file.path(figures_dir,"PCA/Ambient vs. Foliar"), height = 10, bg = "white")
       
   # PCA Plots (UNE Sites + Distance from Edge)
         
@@ -9820,10 +9648,8 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         guides(color = guide_legend(title = "Particle Source")) +
         geom_text(data = site_means, aes(label = UNE_site, vjust = -1)) +
         theme_minimal()
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Ambient vs. Foliar")
 
-    ggsave("all_PCA_by_site_dfe_AvF.png", plot = all_PCA_by_site_dfe_AvF, width = 10,
+    ggsave("all_PCA_by_site_dfe_AvF.png", plot = all_PCA_by_site_dfe_AvF, path = file.path(figures_dir,"PCA/Ambient vs. Foliar"), width = 10,
         height = 10, bg = "white")
     
 ```
@@ -9869,10 +9695,9 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
             theme(text = element_text(size = 30)) 
         
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-          ggsave("foliar_PC1_loadings.png", plot = foliar_PC1_loadings, width = 5,
+          ggsave("foliar_PC1_loadings.png", plot = foliar_PC1_loadings, width = 5, path = file.path(figures_dir, "PCA/Individual Elements"), 
             height = 10, bg = "white")
-          ggsave("foliar_PC2_loadings.png", plot = foliar_PC2_loadings, width = 5,
+          ggsave("foliar_PC2_loadings.png", plot = foliar_PC2_loadings, width = 5, path = file.path(figures_dir, "PCA/Individual Elements"),
             height = 10, bg = "white")
                   
  # making a data frame with the loadings, sites, and site characteristics
@@ -9887,8 +9712,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
     theme_minimal()  # Apply minimal theme
     
     # printing figures
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-      ggsave("foliar_PCA_elementsonly.png", plot = foliar_PCA_elementsonly, width = 5,
+      ggsave("foliar_PCA_elementsonly.png", plot = foliar_PCA_elementsonly, path = file.path(figures_dir, "PCA/Individual Elements"),width = 5,
             height = 5, bg = "white")
 
 # PCA Plots (UNE Sites)
@@ -9909,8 +9733,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_urb_cat_ISA.png", plot = foliar_PCA_by_site_urb_cat_ISA, width = 7,
+        ggsave("foliar_PCA_by_site_urb_cat_ISA.png", plot = foliar_PCA_by_site_urb_cat_ISA, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")
 
  # colored by urb_cat_dist             
@@ -9923,8 +9746,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_urb_cat_dist.png", plot = foliar_PCA_by_site_urb_cat_dist, width = 7,
+        ggsave("foliar_PCA_by_site_urb_cat_dist.png", plot = foliar_PCA_by_site_urb_cat_dist, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")        
 
  # colored by edge_type             
@@ -9938,8 +9760,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_edge_type.png", plot = foliar_PCA_by_site_edge_type, width = 7,
+        ggsave("foliar_PCA_by_site_edge_type.png", plot = foliar_PCA_by_site_edge_type, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")         
 
  # colored by ISA             
@@ -9953,8 +9774,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_ISA.png", plot = foliar_PCA_by_site_ISA, width = 7,
+        ggsave("foliar_PCA_by_site_ISA.png", plot = foliar_PCA_by_site_ISA, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")          
 
  # colored by distance_to_boston             
@@ -9968,8 +9788,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_distance_to_boston.png", plot = foliar_PCA_by_site_distance_to_boston, width = 7,
+        ggsave("foliar_PCA_by_site_distance_to_boston.png", plot = foliar_PCA_by_site_distance_to_boston, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")   
                                                       
 # PCA Plots (UNE Sites + Distance from Edge)
@@ -9987,8 +9806,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("foliar_PCA_by_site_dfe.png", plot = foliar_PCA_by_site_dfe, width = 7,
+        ggsave("foliar_PCA_by_site_dfe.png", plot = foliar_PCA_by_site_dfe, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")      
             
 # PCA biplot (by site types)
@@ -10002,9 +9820,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("foliar_PCA_biplot_site_type.png", plot = foliar_PCA_biplot_site_type, width = 10,
+      ggsave("foliar_PCA_biplot_site_type.png", plot = foliar_PCA_biplot_site_type, path = file.path(figures_dir, "PCA/Individual Elements"), width = 10,
         height = 10, bg = "white")
       
 # PCA biplot (with individual sites)
@@ -10018,9 +9834,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("foliar_PCA_biplot_site_name.png", plot = foliar_PCA_biplot_site_name, width = 10,
+      ggsave("foliar_PCA_biplot_site_name.png", plot = foliar_PCA_biplot_site_name, path = file.path(figures_dir, "PCA/Individual Elements"), width = 10,
         height = 10, bg = "white")
             
 
@@ -10098,10 +9912,9 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
             theme(text = element_text(size = 30))  
       
         # printing loadings figures
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-          ggsave("ambient_PC1_loadings.png", plot = ambient_PC1_loadings, width = 5,
+          ggsave("ambient_PC1_loadings.png", plot = ambient_PC1_loadings, path = file.path(figures_dir, "PCA/Individual Elements"), width = 5,
             height = 12, bg = "white")
-          ggsave("ambient_PC2_loadings.png", plot = ambient_PC2_loadings, width = 5,
+          ggsave("ambient_PC2_loadings.png", plot = ambient_PC2_loadings, path = file.path(figures_dir, "PCA/Individual Elements"), width = 5,
             height = 12, bg = "white")
                   
  # making a data frame with the loadings, sites, and site characteristics
@@ -10116,8 +9929,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
     theme_minimal()  # Apply minimal theme
     
     # printing figures
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-      ggsave("ambient_PCA_elementsonly.png", plot = ambient_PCA_elementsonly, width = 5,
+      ggsave("ambient_PCA_elementsonly.png", plot = ambient_PCA_elementsonly, path = file.path(figures_dir, "PCA/Individual Elements"), width = 5,
             height = 5, bg = "white")
 
 # PCA Plots (UNE Sites)
@@ -10138,8 +9950,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_urb_cat_ISA.png", plot = ambient_PCA_by_site_urb_cat_ISA, width = 7,
+        ggsave("ambient_PCA_by_site_urb_cat_ISA.png", plot = ambient_PCA_by_site_urb_cat_ISA, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")
 
  # colored by urb_cat_dist             
@@ -10152,8 +9963,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_urb_cat_dist.png", plot = ambient_PCA_by_site_urb_cat_dist, width = 7,
+        ggsave("ambient_PCA_by_site_urb_cat_dist.png", plot = ambient_PCA_by_site_urb_cat_dist, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")        
 
  # colored by edge_type             
@@ -10167,8 +9977,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_edge_type.png", plot = ambient_PCA_by_site_edge_type, width = 7,
+        ggsave("ambient_PCA_by_site_edge_type.png", plot = ambient_PCA_by_site_edge_type, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")         
 
  # colored by ISA             
@@ -10182,8 +9991,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_ISA.png", plot = ambient_PCA_by_site_ISA, width = 7,
+        ggsave("ambient_PCA_by_site_ISA.png", plot = ambient_PCA_by_site_ISA, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")          
 
  # colored by distance_to_boston             
@@ -10196,9 +10004,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         geom_text(data = site_means, aes(label = UNE_site, vjust = -1)) +
         theme_minimal() 
     
-     # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_distance_to_boston.png", plot = ambient_PCA_by_site_distance_to_boston, width = 7,
+        ggsave("ambient_PCA_by_site_distance_to_boston.png", plot = ambient_PCA_by_site_distance_to_boston, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")   
                                                       
 # PCA Plots (UNE Sites + Distance from Edge)
@@ -10216,8 +10022,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         theme_minimal() 
     
      # printing figure
-        setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-        ggsave("ambient_PCA_by_site_dfe.png", plot = ambient_PCA_by_site_dfe, width = 7,
+        ggsave("ambient_PCA_by_site_dfe.png", plot = ambient_PCA_by_site_dfe, path = file.path(figures_dir, "PCA/Individual Elements"), width = 7,
           height = 6, bg = "white")      
             
 # PCA biplot (by site types)
@@ -10231,9 +10036,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("ambient_PCA_biplot_site_type.png", plot = ambient_PCA_biplot_site_type, width = 10,
+      ggsave("ambient_PCA_biplot_site_type.png", plot = ambient_PCA_biplot_site_type, path = file.path(figures_dir, "PCA/Individual Elements"), width = 10,
         height = 10, bg = "white")
       
 # PCA biplot (with individual sites)
@@ -10247,9 +10050,7 @@ ambient_PCA_biplot_site_name <- ggbiplot(AmbientPMPCA, groups = Ambient_Labels$s
         axis.title.y = element_text(color = "black",size=35)) 
    
    # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/PCA/Individual Elements")
-
-      ggsave("ambient_PCA_biplot_site_name.png", plot = ambient_PCA_biplot_site_name, width = 10,
+      ggsave("ambient_PCA_biplot_site_name.png", plot = ambient_PCA_biplot_site_name, path = file.path(figures_dir, "PCA/Individual Elements"), width = 10,
         height = 10, bg = "white")
 ```
 
@@ -10433,9 +10234,7 @@ for (i in c(6,8,10,12,14,16,18,20,22,24,26,28,30)) {
                      labels=NULL)
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM & PMComp/AvF Ratio")
-  
-  ggsave(paste0(element,"_",leaf_var_mean,".png"), plot = fig, width = 15,
+  ggsave(paste0(element,"_",leaf_var_mean,".png"), plot = fig, path = file.path(dropbox,"LeafSEM & PMComp/AvF Ratio"), width = 15,
     height = 8, bg = "white")  
 }
 }
@@ -10571,9 +10370,7 @@ for (i in c(6,8,10,12,14,16,18,20,22,24,26,28,30)) {
                      labels=NULL)
   
   # printing figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM & PMComp/Foliar")
-  
-  ggsave(paste0(element,"_",leaf_var_mean,".png"), plot = fig, width = 15,
+  ggsave(paste0(element,"_",leaf_var_mean,".png"), plot = fig, path = file.path(dropbox,"LeafSEM & PMComp/AvF Ratio"), width = 15,
     height = 8, bg = "white")  
 }
 }
@@ -10583,12 +10380,10 @@ for (i in c(6,8,10,12,14,16,18,20,22,24,26,28,30)) {
 # Microbial Data
 ## Reading in the microbial data
 ```{r}
-# setting the working directory
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/csvs")
 
 # reading in the data (sent by Katie Atherton from the Bhatnagar lab)
-UNE_16S <- read.csv("M-BUDS_ED_atherton_16S_sample_metadata_final_20250621.csv")
-UNE_ITS <- read.csv("M-BUDS_ED_atherton_ITS_sample_metadata_final_20250621.csv")
+UNE_16S <- read.csv(file.path(dropbox, "Microbial/csvs","M-BUDS_ED_atherton_16S_sample_metadata_final_20250621.csv"))
+UNE_ITS <- read.csv(file.path(dropbox, "M-BUDS_ED_atherton_ITS_sample_metadata_final_20250621.csv"))
 
 # removing rows with NA in columns 
 UNE_16S <- subset(UNE_16S,sequences_dropped=="No")
@@ -10942,12 +10737,12 @@ sum_PMComp_ambient_nocode <- sum_PMComp_ambient[-c(4,9,10),c(-1)] # removing thr
           )    
             
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Microbial")
 
-ggsave(paste("foliarPM_microbial_Spearman_matrix.png"), plot = spearman_matrix_foliar, width = 10,
+
+ggsave(paste("foliarPM_microbial_Spearman_matrix.png"), plot = spearman_matrix_foliar, path = file.path(figures_dir,"Microbial"), width = 10,
   height = 12, bg = "white")
 
-ggsave(paste("ambientPM_microbial_Spearman_matrix.png"), plot = spearman_matrix_ambient, width = 10,
+ggsave(paste("ambientPM_microbial_Spearman_matrix.png"), plot = spearman_matrix_ambient, path = file.path(figures_dir,"Microbial"), width = 10,
   height = 12, bg = "white") 
     
 ```
@@ -11031,11 +10826,9 @@ ggsave(paste("ambientPM_microbial_Spearman_matrix.png"), plot = spearman_matrix_
 
 ## Reading in the leaf nutrient data & joining it with the leaf SEM data
 ```{r}
-# setting the working directory
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Foliar Nutrients/csvs")
 
 # reading in the data
-leafnut <- read.csv("Foliar_N.csv")
+leafnut <- read.csv(file.path(dropbox,"Foliar Nutrients/csvs","Foliar_N.csv"))
 
 # making sure dfe is a character variable 
 leafnut$dfe <- as.character(leafnut$dfe)
@@ -11579,9 +11372,7 @@ for (i in c(4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50
                   )
     
     # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Foliar Nutrients")
-      
-      ggsave(paste(element,".png"), plot = figs, width = 13,
+      ggsave(paste(element,".png"), plot = figs, path = file.path(figures_dir,"Foliar Nutrients"), width = 13,
         height = 9, bg = "white")
         
   }
@@ -11796,9 +11587,7 @@ rho <- matrix(nrow=26,ncol=11)
       coord_fixed()
       
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Particle Size")
-
-ggsave(paste("sizematrix.png"), plot = sizematrix, width = 12,
+ggsave(paste("sizematrix.png"), path = file.path(figures_dir,"Particle Size"), plot = sizematrix, width = 12,
   height = 6, bg = "white")      
       
       
@@ -11828,9 +11617,7 @@ fig <-
   theme(legend.position = "none")
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Particle Size")
-
-ggsave(paste("particle_size_",element,".png"), plot = fig, width = 12,
+ggsave(paste("particle_size_",element,".png"), plot = fig, path = file.path(figures_dir,"Particle Size"), width = 12,
   height = 6, bg = "white")      
       
 
@@ -11940,8 +11727,7 @@ FoliarPMCompxUNESites$size_category <- as.factor(FoliarPMCompxUNESites$size_cate
             foliar_PM_size_art_pvals <- as.data.frame(foliar_PM_size_art_pvals)
             
             # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_size_art_pvals, "foliar_PM_size_art_pvals.csv", row.names = TRUE)
+            write.csv(foliar_PM_size_art_pvals, file.path(stats_dir,"foliar_PM_size_art_pvals.csv"), row.names = TRUE)
             
         # the other matrices store pairwise comparisons & letters to indicate significance
             
@@ -11961,8 +11747,7 @@ FoliarPMCompxUNESites$size_category <- as.factor(FoliarPMCompxUNESites$size_cate
                 foliar_PM_size_art_pairwise_isa[] <- lapply(foliar_PM_size_art_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
                 
               # write the data frame to a csv
-                setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-                write.csv(foliar_PM_size_art_pairwise_isa, "foliar_PM_size_art_pairwise_isa.csv", row.names = TRUE)
+                write.csv(foliar_PM_size_art_pairwise_isa, file.path(stats_dir,"foliar_PM_size_art_pairwise_isa.csv", row.names = TRUE))
                 
         }
 
@@ -12059,9 +11844,7 @@ element <- element_names[i]
 foliar_element_size_medians_list[[element]] <- fig
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Particle Size")
-
-ggsave(paste(element,"particle_size_urb.png"), plot = fig, width = 6,
+ggsave(paste(element,"particle_size_urb.png"), plot = fig, path = file.path(figures_dir,"Particle Size"), width = 6,
   height = 4, bg = "white")
 }         
   
@@ -12169,8 +11952,7 @@ FoliarPMCompxUNESites$size_category <- as.factor(FoliarPMCompxUNESites$size_cate
             foliar_PM_size_art_pvals <- as.data.frame(foliar_PM_size_art_pvals)
             
             # write the data frame to a csv
-            setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-            write.csv(foliar_PM_size_art_pvals, "foliar_PM_size_art_pvals.csv", row.names = TRUE)
+            write.csv(foliar_PM_size_art_pvals, file.path(stats_dir,"foliar_PM_size_art_pvals.csv"), row.names = TRUE)
             
         # the other matrices store pairwise comparisons & letters to indicate significance
             
@@ -12190,8 +11972,7 @@ FoliarPMCompxUNESites$size_category <- as.factor(FoliarPMCompxUNESites$size_cate
                 foliar_PM_size_art_pairwise_isa[] <- lapply(foliar_PM_size_art_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
                 
               # write the data frame to a csv
-                setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-                write.csv(foliar_PM_size_art_pairwise_isa, "foliar_PM_size_art_pairwise_isa.csv", row.names = TRUE)
+                write.csv(foliar_PM_size_art_pairwise_isa, file.path(stats_dir,"foliar_PM_size_art_pairwise_isa.csv"), row.names = TRUE)
                 
         }
 
@@ -12287,9 +12068,7 @@ element <- element_names[i]
 foliar_element_size_medians_list[[element]] <- fig
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Particle Size")
-
-ggsave(paste(element,"particle_size_dfe.png"), plot = fig, width = 6,
+ggsave(paste(element,"particle_size_dfe.png"), plot = fig, path = file.path(figures_dir,"Particle Size"), width = 6,
   height = 4, bg = "white")
 }         
         
@@ -12378,9 +12157,8 @@ fig <- ggplot(data = summary_isa,
 foliar_element_size_int_medians_list[[element]] <- fig
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Particle Size")
 
-ggsave(paste(element,"particle_size.png"), plot = fig, width = 6,
+ggsave(paste(element,"particle_size.png"), plot = fig, path = file.path(figures_dir,"Particle Size"), width = 6,
   height = 4, bg = "white")
 }
 
@@ -12639,9 +12417,7 @@ ambient_comp_dist <-
             labels=NULL,ncol=2)  
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/All-element Barplots")
-
-ggsave("ambient_comp_dist.png", plot = ambient_comp_dist, width = 20,
+ggsave("ambient_comp_dist.png", plot = ambient_comp_dist, path = file.path(figures_dir,"All-element Barplots"), width = 20,
   height = 10, bg = "white")
 ```
 
@@ -12843,9 +12619,7 @@ ambient_comp_isa <-
             labels=NULL,ncol=2)  
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/All-element Barplots")
-
-ggsave("ambient_comp_isa.png", plot = ambient_comp_isa, width = 20,
+ggsave("ambient_comp_isa.png", plot = ambient_comp_isa, path = file.path(figures_dir,"All-element Barplots"), width = 20,
   height = 10, bg = "white")
 ```
 ## Foliar
@@ -12999,9 +12773,7 @@ foliar_comp_dist <-
             labels=NULL,ncol=2)  
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/All-element Barplots")
-
-ggsave("foliar_comp_dist.png", plot = foliar_comp_dist, width = 20,
+ggsave("foliar_comp_dist.png", plot = foliar_comp_dist, path = file.path(figures_dir,"All-element Barplots"), width = 20,
   height = 10, bg = "white")
 ```
 
@@ -13145,9 +12917,7 @@ foliar_comp_isa <-
             labels=NULL,ncol=2,rel_widths=)  
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/All-element Barplots")
-
-ggsave("foliar_comp_isa.png", plot = foliar_comp_isa, width = 20,
+ggsave("foliar_comp_isa.png", plot = foliar_comp_isa, path = file.path(figures_dir,"All-element Barplots"), width = 20,
   height = 10, bg = "white")
 ```
 # Template/Unused Code
@@ -13594,11 +13364,10 @@ element <- all_element_names[i]
     all_PM_NOopen_art_pvals_dist[] <- lapply(all_PM_NOopen_art_pvals_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     
     # write the data frame to a csv
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Statistics Results")
-    write.csv(all_PM_NOopen_art_pvals_isa, "all_PM_NOopen_art_pvals_isa.csv", row.names = TRUE)
-    write.csv(all_PM_NOopen_art_pvals_dist, "all_PM_NOopen_art_pvals_dist.csv", row.names = TRUE)
-    write.csv(all_PM_NOopen_pairwise_isa, "all_PM_NOopen_pairwise_isa.csv", row.names = TRUE)
-    write.csv(all_PM_NOopen_pairwise_dist, "all_PM_NOopen_pairwise_dist.csv", row.names = TRUE)    
+    write.csv(all_PM_NOopen_art_pvals_isa, file.path(stats_dir,"all_PM_NOopen_art_pvals_isa.csv"), row.names = TRUE)
+    write.csv(all_PM_NOopen_art_pvals_dist, file.path(stats_dir,"all_PM_NOopen_art_pvals_dist.csv"), row.names = TRUE)
+    write.csv(all_PM_NOopen_pairwise_isa, file.path(stats_dir,"all_PM_NOopen_pairwise_isa.csv"), row.names = TRUE)
+    write.csv(all_PM_NOopen_pairwise_dist, file.path(stats_dir,"all_PM_NOopen_pairwise_dist.csv"), row.names = TRUE)    
 ```
 ## Categorical Plots for Ambient vs. Foliar (by UvR & dfe)
 ```{r}
@@ -13765,9 +13534,7 @@ all_element_cat_list_isa[[element]] <- fig_isa  # Store each figure in the list 
 all_element_cat_list_dist[[element]] <- fig_dist  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp/Figures/Elements/Ambient vs. Foliar")
-
-ggsave(paste(element,"all_cat.png"), plot = fig_isa, width = 12,
+ggsave(paste(element,"all_cat.png"), plot = fig_isa, path = file.path(figures_dir,"Elements/Ambient vs. Foliar"), width = 12,
   height = 8, bg = "white")
 }
 

@@ -31,9 +31,15 @@ library(multcomp)
 library(recolorize) # to read in the legend
 library(rcompanion)
 
+# === FILE PATHS (update these if running on another machine) ===
+dropbox     <- "/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode"
+project     <- file.path(dropbox, "Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM")
+data_dir    <- file.path(project, "csvs")
+figures_dir <- file.path(project, "Figures")
+
 # Setting working directory
 
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/csvs")
+  setwd(data_dir)
 
 # Reading In Leaf SEM Data
 
@@ -575,9 +581,7 @@ for (i in 1:13) {
   # Printing
       
       # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/By Site")
-      
-      ggsave(paste(leaf_var_unt,"_sites.png"), plot = fig, width = 8,
+      ggsave(paste(leaf_var_unt,"_sites.png"), plot = fig, path = file.path(figures_dir,"Categorical/By Site"), width = 8,
         height = 4, bg = "white")
 }    
 ```
@@ -1009,9 +1013,7 @@ for (i in 1:13) {
       LeafSEM_ANOVA_ISA[[leaf_var_unt]] <- fig_isa
       
       # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/Parametric ANOVA")
-      
-      ggsave(paste(leaf_var_unt,"_cat.png"), plot = figs, width = 9,
+      ggsave(paste(leaf_var_unt,"_cat.png"), plot = figs, path = file.path(figures_dir,"Categorical/Parametric ANOVA"), width = 9,
         height = 4, bg = "white")
 }    
 ```
@@ -1268,9 +1270,7 @@ for (i in 1:13) {
       LeafSEM_ANOVA_ISA_jit[[leaf_var_unt]] <- fig_isa
       
       # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/Parametric ANOVA")
-      
-      ggsave(paste(leaf_var_unt,"_cat_jit.png"), plot = figs, width = 9,
+      ggsave(paste(leaf_var_unt,"_cat_jit.png"), plot = figs, path = file.path(figures_dir,"Categorical/Parametric ANOVA"), width = 9,
         height = 4, bg = "white")
 }    
 ```
@@ -1709,9 +1709,7 @@ for (i in 1:13) {
           figs_pub[[leaf_var_unt]] <- fig_pub 
           
           # printing figure
-          setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/ART ANOVA/Means")
-          
-          ggsave(paste(leaf_var_unt,"_cat_ART.png"), plot = figs, width = 9,
+          ggsave(paste(leaf_var_unt,"_cat_ART.png"), plot = figs,path = file.path(figures_dir,"Categorical/ART ANOVA/Means"), width = 9,
             height = 4, bg = "white")
 
               
@@ -1856,9 +1854,7 @@ for (i in 1:13) {
               figs_pub_medians[[leaf_var_unt]] <- fig_pub
               
               # printing figure
-              setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/ART ANOVA/Medians")
-              
-              ggsave(paste(leaf_var_unt,"_cat_ART.png"), plot = figs, width = 9,
+              ggsave(paste(leaf_var_unt,"_cat_ART.png"), plot = figs, path = file.path(figures_dir,"Categorical/ART ANOVA/Medians"), width = 9,
                 height = 4, bg = "white")
     
 }
@@ -2072,10 +2068,7 @@ for (i in 1:13) {
               
               figs_pub_medians[[leaf_var_unt]] <- fig_pub
               
-              # printing figure
-              setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/ART ANOVA/Medians")
-              
-              ggsave(paste(leaf_var_unt,"_cat_ART_jit.png"), plot = figs, width = 9,
+              ggsave(paste(leaf_var_unt,"_cat_ART_jit.png"), plot = figs, path = file.path(figures_dir,"Categorical/ART ANOVA/Medians"), width = 9,
                 height = 4, bg = "white")
     
 }
@@ -2758,9 +2751,7 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
     
     # printing figures
     
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/Ambient Figs w Open")
-    
-    ggsave("ambient_PM2.5_open_cat_figs.png", plot = ambient_PM2.5_open_cat_figs, width = 8,
+    ggsave("ambient_PM2.5_open_cat_figs.png", plot = ambient_PM2.5_open_cat_figs, path = file.path(figures_dir,"Categorical/Ambient Figs w Open"), width = 8,
       height = 4.5, bg = "white")
 
 # Means
@@ -2847,10 +2838,7 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
     ambient_PM2.5_open_cat_figs <- plot_grid(ambient_PM2.5_open_urb_cat_dist_means, ambient_PM2.5_open_urb_cat_isa_means,legendopen, labels=NULL,ncol=3,rel_widths=c(1,1,0.3))
     
     # printing figures
-    
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/Ambient Figs w Open")
-    
-    ggsave("ambient_PM2.5_open_cat_figs_mean.png", plot = ambient_PM2.5_open_cat_figs, width = 8,
+    ggsave("ambient_PM2.5_open_cat_figs_mean.png", plot = ambient_PM2.5_open_cat_figs, path = file.path(figures_dir,"Categorical/Ambient Figs w Open"), width = 8,
       height = 4.5, bg = "white")    
     
     
@@ -2886,9 +2874,7 @@ sum <- data_summary(PassiveMassOpenxUNESites,
   # Printing
       
       # printing figure
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/Ambient Figs w Open")
-      
-      ggsave(paste("ambient_PM2.5_sites.png"), plot = fig, width = 8,
+      ggsave(paste("ambient_PM2.5_sites.png"), plot = fig, path = file.path(figures_dir,"Categorical/Ambient Figs w Open"), width = 8,
         height = 4, bg = "white")
 
 ```
@@ -2982,10 +2968,7 @@ sum <- data_summary(PassiveMassOpenxUNESites,
       log_ambient_PM2.5_open_cat_figs_means <- plot_grid(log_ambient_PM2.5_open_urb_cat_dist, log_ambient_PM2.5_open_urb_cat_isa, labels=NULL,ncol=2,rel_widths=c(1,1.45))
       
       # printing figures
-      
-      setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical")
-      
-      ggsave("log_ambient_PM2.5_open_cat_figs_means.png", plot = log_ambient_PM2.5_open_cat_figs_means, width = 7,
+      ggsave("log_ambient_PM2.5_open_cat_figs_means.png", plot = log_ambient_PM2.5_open_cat_figs_means, path = file.path(figures_dir,"Categorical"), width = 7,
         height = 3, bg = "white")
 ```
 
@@ -3051,9 +3034,7 @@ sum <- data_summary(PassiveMassOpenxUNESites,
     
     # printing figures
     
-    setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical/Ambient Figs w Open")
-    
-    ggsave("ambient_PM2.5_open_cat_figs.png", plot = ambient_PM2.5_open_cat_figs, width = 7,
+    ggsave("ambient_PM2.5_open_cat_figs.png", plot = ambient_PM2.5_open_cat_figs, path = file.path(figures_dir,"Categorical/Ambient Figs w Open"), width = 7,
       height = 3, bg = "white")
 
 ```
@@ -3116,9 +3097,7 @@ ambient_PM10_open_cat_figs <- plot_grid(ambient_PM10_open_urb_cat_dist, ambient_
 
 # printing figures
 
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical")
-
-ggsave("ambient_PM10_open_cat_figs.png", plot = ambient_PM10_open_cat_figs, width = 7,
+ggsave("ambient_PM10_open_cat_figs.png", plot = ambient_PM10_open_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
 
 # Testing for Normality
@@ -3813,33 +3792,31 @@ ambient_PM10_dist_line_plot
 ### Printing Line Graphs
 #### %ISA
 ```{r,eval=FALSE}
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Continuous/Line Graphs/ISA")
-
-ggsave("perc_occluded_isa_line_plot.png", plot = perc_occluded_isa_line_plot, width = 7,
+ggsave("perc_occluded_isa_line_plot.png", plot = perc_occluded_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_PM_isa_line_plot.png", plot = perc_occluded_PM_isa_line_plot, width = 7,
+ggsave("perc_occluded_PM_isa_line_plot.png", plot = perc_occluded_PM_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_hyphae_isa_line_plot.png", plot = perc_occluded_hyphae_isa_line_plot, width = 7,
+ggsave("perc_occluded_hyphae_isa_line_plot.png", plot = perc_occluded_hyphae_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_single_cell_isa_line_plot.png", plot = perc_occluded_single_cell_isa_line_plot, width = 7,
+ggsave("perc_occluded_single_cell_isa_line_plot.png", plot = perc_occluded_single_cell_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_other_isa_line_plot.png", plot = perc_occluded_other_isa_line_plot, width = 7,
+ggsave("perc_occluded_other_isa_line_plot.png", plot = perc_occluded_other_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("stomatal_density_isa_line_plot.png", plot = stomatal_density_isa_line_plot, width = 7,
+ggsave("stomatal_density_isa_line_plot.png", plot = stomatal_density_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("hyphal_conc_isa_line_plot.png", plot = hyphal_conc_isa_line_plot, width = 7,
+ggsave("hyphal_conc_isa_line_plot.png", plot = hyphal_conc_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("single_cell_density_isa_line_plot.png", plot = single_cell_density_isa_line_plot, width = 7,
+ggsave("single_cell_density_isa_line_plot.png", plot = single_cell_density_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("wax_isa_line_plot.png", plot = wax_isa_line_plot, width = 7,
+ggsave("wax_isa_line_plot.png", plot = wax_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM2.5_isa_line_plot.png", plot = foliar_PM2.5_isa_line_plot, width = 7,
+ggsave("foliar_PM2.5_isa_line_plot.png", plot = foliar_PM2.5_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM10_isa_line_plot.png", plot = foliar_PM10_isa_line_plot, width = 7,
+ggsave("foliar_PM10_isa_line_plot.png", plot = foliar_PM10_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM2.5_isa_line_plot.png", plot = ambient_PM2.5_isa_line_plot, width = 7,
+ggsave("ambient_PM2.5_isa_line_plot.png", plot = ambient_PM2.5_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM10_isa_line_plot.png", plot = ambient_PM10_isa_line_plot, width = 7,
+ggsave("ambient_PM10_isa_line_plot.png", plot = ambient_PM10_isa_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/ISA"), width = 7,
   height = 5, bg = "white")
 
 # Making a list with all these figures
@@ -3867,33 +3844,31 @@ ggsave("isa_line_plots.png", plot = isa_line_plots, width = 20,
 
 #### Distance to Boston
 ```{r,eval=FALSE}
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Continuous/Line Graphs/Distance to Boston")
-
-ggsave("perc_occluded_line_dist_plot.png", plot = perc_occluded_dist_line_plot, width = 7,
+ggsave("perc_occluded_line_dist_plot.png", plot = perc_occluded_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_PM_dist_line_plot.png", plot = perc_occluded_PM_dist_line_plot, width = 7,
+ggsave("perc_occluded_PM_dist_line_plot.png", plot = perc_occluded_PM_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_hyphae_dist_line_plot.png", plot = perc_occluded_hyphae_dist_line_plot, width = 7,
+ggsave("perc_occluded_hyphae_dist_line_plot.png", plot = perc_occluded_hyphae_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_single_cell_dist_line_plot.png", plot = perc_occluded_single_cell_dist_line_plot, width = 7,
+ggsave("perc_occluded_single_cell_dist_line_plot.png", plot = perc_occluded_single_cell_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_other_dist_line_plot.png", plot = perc_occluded_other_dist_line_plot, width = 7,
+ggsave("perc_occluded_other_dist_line_plot.png", plot = perc_occluded_other_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("stomatal_density_dist_line_plot.png", plot = stomatal_density_dist_line_plot, width = 7,
+ggsave("stomatal_density_dist_line_plot.png", plot = stomatal_density_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("hyphal_conc_dist_line_plot.png", plot = hyphal_conc_dist_line_plot, width = 7,
+ggsave("hyphal_conc_dist_line_plot.png", plot = hyphal_conc_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("single_cell_density_dist_line_plot.png", plot = single_cell_density_dist_line_plot, width = 7,
+ggsave("single_cell_density_dist_line_plot.png", plot = single_cell_density_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("wax_dist_line_plot.png", plot = wax_dist_line_plot, width = 7,
+ggsave("wax_dist_line_plot.png", plot = wax_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM2.5_dist_line_plot.png", plot = foliar_PM2.5_dist_line_plot, width = 7,
+ggsave("foliar_PM2.5_dist_line_plot.png", plot = foliar_PM2.5_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM10_dist_line_plot.png", plot = foliar_PM10_dist_line_plot, width = 7,
+ggsave("foliar_PM10_dist_line_plot.png", plot = foliar_PM10_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM2.5_dist_line_plot.png", plot = ambient_PM2.5_dist_line_plot, width = 7,
+ggsave("ambient_PM2.5_dist_line_plot.png", plot = ambient_PM2.5_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM10_dist_line_plot.png", plot = ambient_PM10_dist_line_plot, width = 7,
+ggsave("ambient_PM10_dist_line_plot.png", plot = ambient_PM10_dist_line_plot, path = file.path(figures_dir,"Continuous/Line Graphs/Distance to Boston"), width = 7,
   height = 5, bg = "white")
 
 # Making a list with all these figures
@@ -6043,65 +6018,61 @@ r.squaredGLMM(ambient_PM10_dist.glm)
 ## Printing GLM Figures
 ### %ISA
 ```{r,eval=FALSE}
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Continuous/Regression Figures/ISA/GLMs")
-
-ggsave("perc_occluded_isa_lm_fig.png", plot = perc_occluded_isa_lm_fig, width = 7,
+ggsave("perc_occluded_isa_lm_fig.png", plot = perc_occluded_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_PM_isa_lm_fig.png", plot = perc_occluded_PM_isa_lm_fig, width = 7,
+ggsave("perc_occluded_PM_isa_lm_fig.png", plot = perc_occluded_PM_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_hyphae_isa_lm_fig.png", plot = perc_occluded_hyphae_isa_lm_fig, width = 7,
+ggsave("perc_occluded_hyphae_isa_lm_fig.png", plot = perc_occluded_hyphae_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_single_cell_isa_lm_fig.png", plot = perc_occluded_single_cell_isa_lm_fig, width = 7,
+ggsave("perc_occluded_single_cell_isa_lm_fig.png", plot = perc_occluded_single_cell_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_other_isa_lm_fig.png", plot = perc_occluded_other_isa_lm_fig, width = 7,
+ggsave("perc_occluded_other_isa_lm_fig.png", plot = perc_occluded_other_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("stomatal_density_isa_lm_fig.png", plot = stomatal_density_isa_lm_fig, width = 7,
+ggsave("stomatal_density_isa_lm_fig.png", plot = stomatal_density_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("hyphal_conc_isa_lm_fig.png", plot = hyphal_conc_isa_lm_fig, width = 7,
+ggsave("hyphal_conc_isa_lm_fig.png", plot = hyphal_conc_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("single_cell_density_isa_lm_fig.png", plot = single_cell_density_isa_lm_fig, width = 7,
+ggsave("single_cell_density_isa_lm_fig.png", plot = single_cell_density_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("wax_isa_lm_fig.png", plot = wax_isa_lm_fig, width = 7,
+ggsave("wax_isa_lm_fig.png", plot = wax_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM2.5_isa_lm_fig.png", plot = foliar_PM2.5_isa_lm_fig, width = 7,
+ggsave("foliar_PM2.5_isa_lm_fig.png", plot = foliar_PM2.5_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM10_isa_lm_fig.png", plot = foliar_PM10_isa_lm_fig, width = 7,
+ggsave("foliar_PM10_isa_lm_fig.png", plot = foliar_PM10_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM2.5_isa_lm_fig.png", plot = ambient_PM2.5_isa_lm_fig, width = 7,
+ggsave("ambient_PM2.5_isa_lm_fig.png", plot = ambient_PM2.5_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM10_isa_lm_fig.png", plot = ambient_PM10_isa_lm_fig, width = 7,
+ggsave("ambient_PM10_isa_lm_fig.png", plot = ambient_PM10_isa_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/ISA/GLMs"), width = 7,
   height = 5, bg = "white")
 ```
 
 ### Distance to Boston (km)
 ```{r,eval=FALSE}
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Continuous/Regression Figures/Distance to Boston/GLMs")
-
-ggsave("perc_occluded_line_dist_plot.png", plot = perc_occluded_dist_lm_fig, width = 7,
+ggsave("perc_occluded_line_dist_plot.png", plot = perc_occluded_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_PM_dist_lm_fig.png", plot = perc_occluded_PM_dist_lm_fig, width = 7,
+ggsave("perc_occluded_PM_dist_lm_fig.png", plot = perc_occluded_PM_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_hyphae_dist_lm_fig.png", plot = perc_occluded_hyphae_dist_lm_fig, width = 7,
+ggsave("perc_occluded_hyphae_dist_lm_fig.png", plot = perc_occluded_hyphae_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_single_cell_dist_lm_fig.png", plot = perc_occluded_single_cell_dist_lm_fig, width = 7,
+ggsave("perc_occluded_single_cell_dist_lm_fig.png", plot = perc_occluded_single_cell_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("perc_occluded_other_dist_lm_fig.png", plot = perc_occluded_other_dist_lm_fig, width = 7,
+ggsave("perc_occluded_other_dist_lm_fig.png", plot = perc_occluded_other_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("stomatal_density_dist_lm_fig.png", plot = stomatal_density_dist_lm_fig, width = 7,
+ggsave("stomatal_density_dist_lm_fig.png", plot = stomatal_density_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("hyphal_conc_dist_lm_fig.png", plot = hyphal_conc_dist_lm_fig, width = 7,
+ggsave("hyphal_conc_dist_lm_fig.png", plot = hyphal_conc_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("single_cell_density_dist_lm_fig.png", plot = single_cell_density_dist_lm_fig, width = 7,
+ggsave("single_cell_density_dist_lm_fig.png", plot = single_cell_density_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("wax_dist_lm_fig.png", plot = wax_dist_lm_fig, width = 7,
+ggsave("wax_dist_lm_fig.png", plot = wax_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM2.5_dist_lm_fig.png", plot = foliar_PM2.5_dist_lm_fig, width = 7,
+ggsave("foliar_PM2.5_dist_lm_fig.png", plot = foliar_PM2.5_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("foliar_PM10_dist_lm_fig.png", plot = foliar_PM10_dist_lm_fig, width = 7,
+ggsave("foliar_PM10_dist_lm_fig.png", plot = foliar_PM10_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM2.5_dist_lm_fig.png", plot = ambient_PM10_dist_lm_fig, width = 7,
+ggsave("ambient_PM2.5_dist_lm_fig.png", plot = ambient_PM10_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
-ggsave("ambient_PM10_dist_lm_fig.png", plot = ambient_PM10_dist_lm_fig, width = 7,
+ggsave("ambient_PM10_dist_lm_fig.png", plot = ambient_PM10_dist_lm_fig, path = file.path(figures_dir,"Continuous/Regression Figures/Distance to Boston/GLMs"), width = 7,
   height = 5, bg = "white")
 
 ``` 
@@ -6553,9 +6524,7 @@ figscombined <- plot_grid(dfe_fig_ISA,dfe_fig_dist,
                           )
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Continuous/Regression Figures/Linear Regression")
-
-ggsave(paste(leaf_var_mean,"_linear.png"), plot = figscombined, width = 12,
+ggsave(paste(leaf_var_mean,"_linear.png"), path = file.path(figures_dir,"Continuous/Regression Figures/Linear Regression"), plot = figscombined, width = 12,
   height = 10, bg = "white")
 
 }
@@ -6628,10 +6597,7 @@ single_cell_foliar_PM2.5_fig <- ggplot(data=sum_single_cell_foliar_PM2.5,mapping
   theme(axis.title=element_text(size=15))+
   scale_color_manual(values=c("#999999", "#060000"))
 
-# printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/Figures/")
-
-ggsave("single_cell_foliar_PM2.5_fig.png", plot = single_cell_foliar_PM2.5_fig, width = 6,
+ggsave("single_cell_foliar_PM2.5_fig.png", plot = single_cell_foliar_PM2.5_fig, path = file.path(dropbox,"Microbial/Figures"), width = 6,
   height = 6, bg = "white")
 
 ```
@@ -6712,24 +6678,20 @@ fig <- ggplot(data=LeafSEM_resp_varsxUNESites,mapping=aes(x=wax,y=foliar_PM2.5,c
                       label = label, inherit.aes = FALSE)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Continuous/Regression Figures/Linear Regression")
-
-ggsave("wax_foliar_PM2.5.png", plot = fig, width = 6,
+ggsave("wax_foliar_PM2.5.png", plot = fig, path = file.path(figures_dir,"Continuous/Regression Figures/Linear Regression"), width = 6,
   height = 6, bg = "white")
 ```
 
 # NOx and O3 data from 2018-2019
 ## Reading in the NOX and O3 data
 ```{r}
-  # Setting working directory
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/csvs")
 
 # reading in the data
 
-    NOx <- read.csv("2018_2019_Nox_Variance.csv")
+    NOx <- read.csv(file.path(dropbox,"NOx O3/csvs","2018_2019_Nox_Variance.csv"))
       NOx <- NOx[!is.na(NOx$NOx_ppb),]
       
-    O3 <- read.csv("2018_2019_O3_Variance.csv")
+    O3 <- read.csv(file.path(dropbox,"NOx O3/csvs","2018_2019_O3_Variance.csv"))
       O3 <- O3[!is.na(O3$O3_ppb),]
 
 # calculating means of NOx and O3 by site & dfe
@@ -6970,12 +6932,10 @@ ambient_vs_foliar_PM10_scatter_fig <- ggplot(foliar_PM10~ambient_PM10,data=LeafS
     scale_color_manual(values=c("#999999", "#060000"))
 
 # printing the figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/Figures")
-
-  ggsave("log_ambient_vs_foliar_PM2.5_fig.png", plot = log_ambient_vs_foliar_PM2.5_fig, width = 7,
+  ggsave("log_ambient_vs_foliar_PM2.5_fig.png", plot = log_ambient_vs_foliar_PM2.5_fig, path = file.path(dropbox,"NOx O3/Figures"), width = 7,
   height = 6, bg = "white")  
   
-  ggsave("ambient_vs_foliar_PM2.5_scatter_fig", plot = log_ambient_vs_foliar_PM2.5_fig, width = 7,
+  ggsave("ambient_vs_foliar_PM2.5_scatter_fig", plot = log_ambient_vs_foliar_PM2.5_fig, path = file.path(dropbox,"NOx O3/Figures"), width = 7,
   height = 6, bg = "white")  
   ambient_vs_foliar_PM2.5_scatter_fig
   
@@ -7143,9 +7103,7 @@ annotate(geom = "text", x=0.5, y=30, size = 7 , label=paste0(
   theme(legend.position = "none")
 
 # printing the figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/Figures")
-
-  ggsave("NOx_O3_dfe.png", plot = NOx_O3_dfe, width = 9,
+  ggsave("NOx_O3_dfe.png", plot = NOx_O3_dfe, path = file.path(dropbox,"NOx O3/Figures"), width = 9,
   height = 9, bg = "white")
   
   # linear model
@@ -7220,9 +7178,7 @@ NOx_O3_urb <-
   theme(legend.position = "none")
     
 # printing the figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/Figures")
-
-  ggsave("NOx_O3_urb.png", plot = NOx_O3_urb, width = 9,
+  ggsave("NOx_O3_urb.png", plot = NOx_O3_urb, path = file.path(dropbox,"NOx O3/Figures"), width = 9,
   height = 9, bg = "white")
   
   
@@ -8202,13 +8158,11 @@ NOx_O3_PM_fig_urb <- plot_grid(plot_grid(NOx_O3_urb,
 NOx_O3_PM_fig <- plot_grid(NOx_O3_PM_fig_dfe,NOx_O3_PM_fig_urb,ncol=1)
 
 # printing the figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/Figures")
-
-  ggsave("NOx_O3_PM_fig_dfe.png", plot = NOx_O3_PM_fig_dfe, width = 20,
+  ggsave("NOx_O3_PM_fig_dfe.png", plot = NOx_O3_PM_fig_dfe, path = file.path(dropbox,"NOx O3/Figures"), width = 20,
   height = 14, bg = "white")
-  ggsave("NOx_O3_PM_fig_urb.png", plot = NOx_O3_PM_fig_urb, width = 20,
+  ggsave("NOx_O3_PM_fig_urb.png", plot = NOx_O3_PM_fig_urb, path = file.path(dropbox,"NOx O3/Figures"), width = 20,
   height = 14, bg = "white")
-  ggsave("NOx_O3_PM_fig.png", plot = NOx_O3_PM_fig, width = 20,
+  ggsave("NOx_O3_PM_fig.png", plot = NOx_O3_PM_fig, path = file.path(dropbox,"NOx O3/Figures"), width = 20,
   height = 28, bg = "white")
 ```
 
@@ -8854,9 +8808,7 @@ figscombined <- plot_grid(dfe_fig_NOx,dfe_fig_O3,dfe_fig_PM2.5,
                           )
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/Figures/Leaf Variables")
-
-ggsave(paste(leaf_var_mean,"_linear.png"), plot = figscombined, width = 17,
+ggsave(paste(leaf_var_mean,"_linear.png"), plot = figscombined, path = file.path(dropbox,"NOx O3/Figures/Leaf Variables"), width = 17,
   height = 10, bg = "white")
 }
 
@@ -9305,9 +9257,7 @@ NOx_O3_stomata_fig <- plot_grid(NOx_stomatal_density, NOx_perc_occluded_PM,
                            O3_stomatal_density, O3_perc_occluded_PM,
                            nrow=2)
 # printing the figure
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/NOx O3/Figures")
-
-  ggsave("NOx_O3_stomata_fig.png", plot = NOx_O3_stomata_fig, width = 12,
+  ggsave("NOx_O3_stomata_fig.png", plot = NOx_O3_stomata_fig, path = file.path(dropbox,"NOx O3/Figures"), width = 12,
   height = 12, bg = "white")
 ```
 
@@ -9331,12 +9281,9 @@ summary(m_quad_int)
 # Microbial Data
 ## Reading in the microbial data
 ```{r}
-# setting the working directory
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/csvs")
-
 # reading in the data (sent by Katie Atherton from the Bhatnagar lab)
-UNE_16S <- read.csv("M-BUDS_ED_atherton_16S_sample_metadata_final_20250621.csv")
-UNE_ITS <- read.csv("M-BUDS_ED_atherton_ITS_sample_metadata_final_20250621.csv")
+UNE_16S <- read.csv(file.path(dropbox,"Microbial/csvs","M-BUDS_ED_atherton_16S_sample_metadata_final_20250621.csv"))
+UNE_ITS <- read.csv(file.path(dropbox,"Microbial/csvs","M-BUDS_ED_atherton_ITS_sample_metadata_final_20250621.csv"))
 
 # removing rows with NA in columns 
 UNE_16S <- subset(UNE_16S,sequences_dropped=="No")
@@ -9510,9 +9457,8 @@ ITS_16S_leaf$urb_cat_isa <- ifelse(ITS_16S_leaf$UNE_site=="AA01"|ITS_16S_leaf$UN
   
   # writing new .csvs with the leaf_pairs data, and microbial + leaf_pairs data
   
-  setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/csvs")
-  write.csv(leaf_pair_means,file="LeafSEM_KA.csv")
-  write.csv(ITS_16S_leaf,file="LeafSEM_micr_KA.csv")
+  write.csv(leaf_pair_means,file.path(dropbox,"Microbial/csvs","LeafSEM_KA.csv"))
+  write.csv(ITS_16S_leaf,file.path(dropbox,"Microbial/csvs","LeafSEM_micr_KA.csv"))
   
 ```
 
@@ -9747,9 +9693,7 @@ hyphal_conc_fg_plots_urb[[fg]] <- urb_cat_isa_fig
 hyphal_conc_fg_plots[[fg]] <- figs
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/Figures/Hyphal Concentration")
-
-ggsave(paste("hyphal_conc_",fg,".png"), plot = figscombined, width = 12,
+ggsave(paste("hyphal_conc_",fg,".png"), plot = figscombined, path = file.path(dropbox,"Microbial/Figures/Hyphal Concentration"), width = 12,
   height = 6, bg = "white")
 
 }  
@@ -9918,9 +9862,8 @@ figs <- list(dfe_fig,urb_cat_isa_fig)
 figscombined <- grid.arrange(grobs=figs,nrow=1)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/Figures/Ambient PM2.5")
 
-ggsave(paste("ambient_PM2.5_",fg,".png"), plot = figscombined, width = 12,
+ggsave(paste("ambient_PM2.5_",fg,".png"), plot = figscombined, path = file.path(dropbox,"Microbial/Figures/Ambient PM2.5"), width = 12,
   height = 6, bg = "white")
 
 }  
@@ -10088,9 +10031,7 @@ figs <- list(dfe_fig,urb_cat_isa_fig)
 figscombined <- grid.arrange(grobs=figs,nrow=1)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/Figures/Foliar PM2.5")
-
-ggsave(paste("foliar_PM2.5_",fg,".png"), plot = figscombined, width = 12,
+ggsave(paste("foliar_PM2.5_",fg,".png"), plot = figscombined, path = file.path(dropbox,"Microbial/Figures/Foliar PM2.5"), width = 12,
   height = 6, bg = "white")
 
 }  
@@ -10258,9 +10199,7 @@ figs <- list(dfe_fig,urb_cat_isa_fig)
 figscombined <- grid.arrange(grobs=figs,nrow=1)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/Figures/Foliar PM10")
-
-ggsave(paste("foliar_PM10_",fg,".png"), plot = figscombined, width = 12,
+ggsave(paste("foliar_PM10_",fg,".png"), plot = figscombined, path = file.path(dropbox,"Microbial/Figures/Foliar PM10"), width = 12,
   height = 6, bg = "white")
 
 }  
@@ -10429,9 +10368,7 @@ figs <- list(dfe_fig,urb_cat_isa_fig)
 figscombined <- grid.arrange(grobs=figs,nrow=1)
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Microbial/Figures/Wax")
-
-ggsave(paste("wax_",fg,".png"), plot = figscombined, width = 12,
+ggsave(paste("wax_",fg,".png"), plot = figscombined, path = file.path(dropbox,"Microbial/Figures/Wax"), width = 12,
   height = 6, bg = "white")
 
 }  
@@ -10500,11 +10437,8 @@ ITS_16S_leaf
 # Aboveground Biomass data from 2018
 ## Reading in the aboveground biomass data
 ```{r}
-# setting the working directory
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Aboveground Biomass/csvs")
-
 # reading in the data
-UNE_ABG <- read.csv("2018_UNE_Aboveground_Biomass_AllometryCalc.csv")
+UNE_ABG <- read.csv(file.path(dropbox,"Aboveground Biomass/csvs","2018_UNE_Aboveground_Biomass_AllometryCalc.csv"))
 UNE_ABG$biomass_C_kg <- as.numeric(UNE_ABG$biomass_C_kg)
 UNE_ABG$dfe <- as.character(UNE_ABG$dfe)
 
@@ -10697,9 +10631,7 @@ fig <- ggplot(data=UNE_ABG_leaf_var_unt, aes(x=biomass_C_kg_m2, y=.data[[leaf_va
 UNE_ABG_LeafSEM_dfe_list[[leaf_var_norm]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Aboveground Biomass/Figures/by DfE")
-
-ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 8,
+ggsave(paste(leaf_var_mean,".png"), path = file.path(dropbox,"Aboveground Biomass/Figures/by DfE"), plot = fig, width = 8,
   height = 8, bg = "white")
 
 }
@@ -10850,9 +10782,7 @@ fig <- ggplot(data=UNE_ABG_leaf_var_unt, aes(x=biomass_C_kg_m2, y=.data[[leaf_va
 UNE_ABG_LeafSEM_urb_list[[leaf_var_norm]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Aboveground Biomass/Figures/by Urbanization")
-
-ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 8,
+ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 8, path = file.path(dropbox,"Aboveground Biomass/Figures/by Urbanization"),
   height = 8, bg = "white")
 
 }
@@ -10874,10 +10804,8 @@ for (i in c(1:13)){
   
   UNE_ABG_LeafSEM_list[[leafvar]] <- figscombined
   
-  # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Aboveground Biomass/Figures")
 
-ggsave(paste(leafvar,"_combined.png"), plot = figscombined, width = 12,
+ggsave(paste(leafvar,"_combined.png"), plot = figscombined, path = file.path(dropbox,"Aboveground Biomass/Figures"), width = 12,
   height = 6, bg = "white")
   
 }
@@ -11106,9 +11034,7 @@ if(all(is.na(UNE_ABG_leaf_var_norm[[leaf_var_norm]]))=="FALSE") {
 UNE_ABG_leaf_var_list[[i]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Aboveground Biomass/Figures")
-
-ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 10,
+ggsave(paste(leaf_var_mean,".png"), plot = fig, path = file.path(dropbox,"Aboveground Biomass/Figures"), width = 10,
   height = 10, bg = "white")
 }
 
@@ -11150,9 +11076,7 @@ UNE_ABG_LeafSEM_UvR <-
         axis.text.y = element_text(color = "black"))
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Aboveground Biomass/Figures")
-
-ggsave(paste("UNE_ABG_LeafSEM_UvR.png"), plot = UNE_ABG_LeafSEM_UvR, width = 6,
+ggsave(paste("UNE_ABG_LeafSEM_UvR.png"), plot = UNE_ABG_LeafSEM_UvR, path = file.path(dropbox,"Aboveground Biomass/Figures"), width = 6,
   height = 6, bg = "white")
 
 ```
@@ -11161,11 +11085,9 @@ ggsave(paste("UNE_ABG_LeafSEM_UvR.png"), plot = UNE_ABG_LeafSEM_UvR, width = 6,
 # Leaf Nutrients
 ## Reading in the leaf nutrient data & joining it with the leaf SEM data
 ```{r}
-# setting the working directory
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Foliar Nutrients/csvs")
 
 # reading in the data
-leafnut <- read.csv("Foliar_N.csv")
+leafnut <- read.csv(file.path(dropbox,"Foliar Nutrients/csvs","Foliar_N.csv"))
 
 # making sure dfe is a character variable 
 leafnut$dfe <- as.character(leafnut$dfe)
@@ -11310,9 +11232,8 @@ if(all(is.na(leafnut_leafSEM_norm[[leaf_var_norm]]))=="FALSE") {
 UNE_leafnut_leafSEM_list[[i]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Foliar Nutrients/Figures/by dfe")
 
-ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 8,
+ggsave(paste(leaf_var_mean,".png"), plot = fig, path = file.path(dropbox,"Foliar Nutrients/Figures/by dfe"), width = 8,
   height = 8, bg = "white")
 }
 
@@ -11430,9 +11351,7 @@ if(all(is.na(leafnut_leafSEM_norm[[leaf_var_norm]]))=="FALSE") {
 UNE_leafnut_leafSEM_list[[i]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Foliar Nutrients/Figures/by Urbanization")
-
-ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 8,
+ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 8, path = file.path(dropbox,"Foliar Nutrients/Figures/by Urbanization"),
   height = 8, bg = "white")
 }
 
@@ -11660,9 +11579,7 @@ if(all(is.na(leafnut_leafSEM_norm[[leaf_var_norm]]))=="FALSE") {
 UNE_leafnut_leafSEM_list[[i]] <- fig  # Store each figure in the list we made
 
 # printing figure
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/Foliar Nutrients/Figures")
-
-ggsave(paste(leaf_var_mean,".png"), plot = fig, width = 10,
+ggsave(paste(leaf_var_mean,".png"), plot = fig, path = file.path(dropbox,"Foliar Nutrients/Figures"), width = 10,
   height = 10, bg = "white")
 }
 
@@ -13570,33 +13487,30 @@ library(ARTool)
 
 ### Printing Categorical Figures
 ```{r}
-
-setwd("/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM/Figures/Categorical")
-
-ggsave("perc_occluded_cat_figs.png", plot = perc_occluded_cat_figs, width = 7,
+ggsave("perc_occluded_cat_figs.png", plot = perc_occluded_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("perc_occluded_PM_cat_figs.png", plot = perc_occluded_PM_cat_figs, width = 7,
+ggsave("perc_occluded_PM_cat_figs.png", plot = perc_occluded_PM_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("perc_occluded_hyphae_cat_figs.png", plot = perc_occluded_hyphae_cat_figs, width = 7,
+ggsave("perc_occluded_hyphae_cat_figs.png", plot = perc_occluded_hyphae_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("perc_occluded_single_cell_cat_figs.png", plot = perc_occluded_single_cell_cat_figs, width = 7,
+ggsave("perc_occluded_single_cell_cat_figs.png", plot = perc_occluded_single_cell_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("perc_occluded_other_cat_figs.png", plot = perc_occluded_other_cat_figs, width = 7,
+ggsave("perc_occluded_other_cat_figs.png", plot = perc_occluded_other_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-# ggsave("stomatal_density_cat_figs.png", plot = stomatal_density_cat_figs, width = 7,
+# ggsave("stomatal_density_cat_figs.png", plot = stomatal_density_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   # height = 3, bg = "white")
-ggsave("hyphal_conc_cat_figs.png", plot = hyphal_conc_cat_figs, width = 7,
+ggsave("hyphal_conc_cat_figs.png", plot = hyphal_conc_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-# ggsave("single_cell_density_cat_figs.png", plot = single_cell_density_cat_figs, width = 7,
+# ggsave("single_cell_density_cat_figs.png", plot = single_cell_density_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   # height = 3, bg = "white")
-# ggsave("wax_cat_figs.png", plot = wax_cat_figs, width = 7,
+# ggsave("wax_cat_figs.png", plot = wax_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   # height = 3, bg = "white")
-ggsave("foliar_PM2.5_cat_figs.png", plot = foliar_PM2.5_cat_figs, width = 7,
+ggsave("foliar_PM2.5_cat_figs.png", plot = foliar_PM2.5_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("foliar_PM10_cat_figs.png", plot = foliar_PM10_cat_figs, width = 7,
+ggsave("foliar_PM10_cat_figs.png", plot = foliar_PM10_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("ambient_PM2.5_cat_figs.png", plot = ambient_PM2.5_cat_figs, width = 7,
+ggsave("ambient_PM2.5_cat_figs.png", plot = ambient_PM2.5_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
-ggsave("ambient_PM10_cat_figs.png", plot = ambient_PM10_cat_figs, width = 7,
+ggsave("ambient_PM10_cat_figs.png", plot = ambient_PM10_cat_figs, path = file.path(figures_dir,"Categorical"), width = 7,
   height = 3, bg = "white")
 ```

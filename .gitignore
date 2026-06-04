@@ -32,7 +32,3 @@ axes_limits.csv
 axes_limits_medians.csv
 LeafPMComp.csv
 AmbientPM.csv
-
-# Any output files you can regenerate
-*.pdf
-*.docx
