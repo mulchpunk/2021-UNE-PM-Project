@@ -18,6 +18,7 @@ library(nlme) # used to make linear mixed-effect models and perform associated f
 library(tidyr) # associated with gplot
 library(MuMIn)
 library(lme4) # used to make linear mixed-effect models, and perform associated functions (here, to extract R^2)
+library(lmerTest)  # adds p-values to lme4 output
 library(rsq) # used to extract R^2
 library(car) 
 library(dunn.test) # used for nonparametric comparison
@@ -33,7 +34,7 @@ library(rcompanion)
 
 # === FILE PATHS (update these if running on another machine) ===
 dropbox     <- "/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode"
-project     <- file.path(dropbox, "Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/LeafSEM")
+project     <- file.path(dropbox, "LeafSEM")
 data_dir    <- file.path(project, "csvs")
 figures_dir <- file.path(project, "Figures")
 
@@ -112,7 +113,7 @@ figures_dir <- file.path(project, "Figures")
   leaf_resp_vars <- as.data.frame(leaf_resp_vars)
 
   LeafSEM_resp_varsxUNESites <-  
-    cbind(leaf_resp_vars,LeafSEMxUNESites$UNE_site,LeafSEMxUNESites$urb_cat_dist,LeafSEMxUNESites$urb_cat_isa,LeafSEMxUNESites$dfe,LeafSEMxUNESites$ISA,LeafSEMxUNESites$distance_to_boston)
+    cbind(leaf_resp_vars,LeafSEMxUNESites$UNE_site,LeafSEMxUNESites$urb_cat_dist,LeafSEMxUNESites$urb_cat_isa,LeafSEMxUNESites$dfe,LeafSEMxUNESites$ISA,LeafSEMxUNESites$distance_to_boston,LeafSEMxUNESites$replicate)
 
   colnames(LeafSEM_resp_varsxUNESites) <- c("perc_occluded",
                               "perc_occluded_PM",
@@ -132,7 +133,8 @@ figures_dir <- file.path(project, "Figures")
                               "urb_cat_isa",
                               "dfe",
                               "ISA",
-                              "distance_to_boston")
+                              "distance_to_boston",
+                              "tree")
                              
 
   LeafSEM_resp_varsxUNESites <- as.data.frame(LeafSEM_resp_varsxUNESites) # formatting the data as a data frame
@@ -153,8 +155,9 @@ figures_dir <- file.path(project, "Figures")
   LeafSEM_resp_varsxUNESites$ambient_PM10 <- as.numeric(LeafSEM_resp_varsxUNESites$ambient_PM10)
   LeafSEM_resp_varsxUNESites$ISA <- as.numeric(LeafSEM_resp_varsxUNESites$ISA)
   LeafSEM_resp_varsxUNESites$distance_to_boston <- as.numeric(LeafSEM_resp_varsxUNESites$distance_to_boston)
+  LeafSEM_resp_varsxUNESites$tree <- as.factor(LeafSEM_resp_varsxUNESites$tree)
   
-# Steve's function to calculate mean and standard error for variable of interest, which will be important for all these stats and figures
+# Steve's function to calculate mean and standard error for variable of interest
 # data_summary <- function(data, varname, groupnames){
   #require(dplyr)
 #   summary_func <- function(x, col){
@@ -167,7 +170,7 @@ figures_dir <- file.path(project, "Figures")
 #   return(data_sum)
 # }
 
-# updated version of this function
+# updated version of Steve's function
 data_summary <- function(data, varname, groupnames){
   varname <- as.character(varname)
 
@@ -468,10 +471,10 @@ leaf_varnames <- list(
 # creating two separate dataframes, one with the untransformed variables and one with the transformed
 
 # dataframe with untransformed variables (for graphing)
-leafSEM_unt <- LeafSEM_resp_varsxUNESites[,c(1:19)]
+leafSEM_unt <- LeafSEM_resp_varsxUNESites[,c(1:20)]
 
 # data with normalized/transformed variables (for statistics)
-leafSEM_normal <- as.data.frame(c(LeafSEM_resp_varsxUNESites[,c(20,2,21,6,22,23:25,14:19)]))
+leafSEM_normal <- as.data.frame(c(LeafSEM_resp_varsxUNESites[,c(21,2,22,6,23:26,14:20)]))
 
 # these are the variables that couldn't be transformed to be normal. I am making NA columns for them to add to the "normal" dataframe
 leafSEM_normal$perc_occluded_single_cell <- NA
@@ -480,7 +483,11 @@ leafSEM_normal$single_cell_density <- NA
 leafSEM_normal$wax <- NA
 leafSEM_normal$ambient_PM10 <- NA
 
-leafSEM_normal <- leafSEM_normal[,c(1:3,15:16,4,5,17,18,6:8,19,9:14)]
+# putting the columns in the correct order
+leafSEM_normal <- leafSEM_normal[,c(1:3,16:17,4,5,18,19,6:8,20,9:15)]
+
+# making sure tree is a factor rather than numeric
+leafSEM_normal$tree <- as.factor(leafSEM_normal$tree)
 
 # Creating a string with axes titles for each variable
 
@@ -587,7 +594,7 @@ for (i in 1:13) {
 ```
 ## Parametric Analyses
 ### Parametric ANOVA
-```{r}
+```{r, eval =FALSE}
 
 ###### Loop for parametric ANOVAs
 
@@ -621,9 +628,6 @@ for (i in 1:13) {
       "RuralEdge_isa"= character(),
       stringsAsFactors = FALSE
     )
-    
-    LeafSEM_ANOVA <- list()
-    LeafSEM_ANOVA_ISA <- list()
     
     for (v in leaf_vars_norm[1:13]) {
     
@@ -665,43 +669,51 @@ for (i in 1:13) {
       
       # ANOVAS
       
-        # ISA ANOVA
+      fit_dfe     <- aov(as.formula(paste(v, "~ dfe")), data = leafSEM_normal)
+      fit_isa     <- aov(as.formula(paste(v, "~ urb_cat_isa")), data = leafSEM_normal)
+      fit_int_isa <- aov(as.formula(paste(v, "~ urb_cat_isa * dfe")), data = leafSEM_normal)
+      fit_dist    <- aov(as.formula(paste(v, "~ urb_cat_dist")), data = leafSEM_normal)
+      fit_int_dist <- aov(as.formula(paste(v, "~ urb_cat_dist * dfe")), data = leafSEM_normal)
       
-        formula_isa <- as.formula(paste(v, "~ dfe"))
-        fit_isa <- aov(formula_isa, data = leafSEM_normal)
-        e_isa <- summary(fit_isa)[[1]]
-      
-        formula_isa <- as.formula(paste(v, "~ urb_cat_isa"))
-        fit_isa <- aov(formula_isa, data = leafSEM_normal)
+        # ANOVA summaries
+        e_isa <- summary(fit_dfe)[[1]]
         u_isa <- summary(fit_isa)[[1]]
-
-        formula_isa <- as.formula(paste(v, "~ urb_cat_isa * dfe"))
-        fit_isa <- aov(formula_isa, data = leafSEM_normal)
-        int_isa <- summary(fit_isa)[[1]]
+        int_isa <- summary(fit_int_isa)[[1]]
+        u_dist <- summary(fit_dist)[[1]]
+        int_dist <- summary(fit_int_dist)[[1]]
         
-          # Extract p-values for first three terms
+          # Extract p-values
           p_dfe_isa     <- e_isa$`Pr(>F)`[1]
           p_urb_cat_isa <- u_isa$`Pr(>F)`[1]
           p_int_isa     <- int_isa$`Pr(>F)`[3]
-        
-        # DIST ANOVA
-      
-        formula_dist <- as.formula(paste(v, "~ urb_cat_dist"))
-        fit_dist <- aov(formula_dist, data = leafSEM_normal)
-        u_dist <- summary(fit_dist)[[1]]
-
-        formula_dist <- as.formula(paste(v, "~ urb_cat_dist * dfe"))
-        fit_dist <- aov(formula_dist, data = leafSEM_normal)
-        int_dist <- summary(fit_dist)[[1]]
-        
-          # Extract p-values for first terms
           p_urb_cat_dist <- u_dist$`Pr(>F)`[1]
           p_int_dist     <- int_dist$`Pr(>F)`[3]
       
-      # Pairwise comparisons
+    # Post-hoc comparisons
+          
+      # Post-hoc for urb_cat_isa (simple one-way model)
+        pairwise_isa_simple <- TukeyHSD(fit_isa, conf.level = 0.95)
+        pairwise_isa_simple <- as.data.frame(pairwise_isa_simple$urb_cat_isa)
+        names(pairwise_isa_simple) <- gsub(" ", ".", names(pairwise_isa_simple))
+        
+        # Extract the single p-value (only one comparison: Urban vs Rural)
+        p_Urban_Rural_isa <- pairwise_isa_simple$p.adj[1]
+        
+        # Extract letters
+        HSD_isa_simple <- data.frame(
+          Comparison = row.names(pairwise_isa_simple),
+          p.adj = pairwise_isa_simple$p.adj
+        )
+        cld_isa_simple <- cldList(p.adj ~ Comparison, data = HSD_isa_simple,
+                                   threshold = 0.05,
+                                   remove.space = TRUE)
+        
+        let_Urban_isa   <- cld_isa_simple$Letter[1]
+        let_Rural_isa   <- cld_isa_simple$Letter[2]   
+                  
       
-        # Distance
-        pairwise_dist <- TukeyHSD(fit_dist, conf.level=.95)
+      # post-hoc for interactive model by distance to Boston
+        pairwise_dist <- TukeyHSD(fit_int_dist, conf.level=.95)
         pairwise_dist <- as.data.frame(pairwise_dist$`urb_cat_dist:dfe`)
         names(pairwise_dist) <- gsub(" ", ".", names(pairwise_dist))
         HSD <- data.frame(Comparison = row.names(pairwise_dist), diff = pairwise_dist$diff, lwr = pairwise_dist$lwr, upr = pairwise_dist$upr,p.adj = pairwise_dist$p.adj
@@ -727,8 +739,8 @@ for (i in 1:13) {
             let_UrbanInterior_dist <- cld_dist$Letter[3]
             let_RuralEdge_dist <- cld_dist$Letter[4]
     
-        # ISA
-        pairwise_isa <- TukeyHSD(fit_isa, conf.level=.95)
+        # post-hoc for interactive model by %ISA
+        pairwise_isa <- TukeyHSD(fit_int_isa, conf.level=.95)
         pairwise_isa <- as.data.frame(pairwise_isa$`urb_cat_isa:dfe`)
         names(pairwise_isa) <- gsub(" ", ".", names(pairwise_isa))
         HSD <- data.frame(Comparison = row.names(pairwise_isa), diff = pairwise_isa$diff, lwr = pairwise_isa$lwr, upr = pairwise_isa$upr,p.adj = pairwise_isa$p.adj
@@ -792,7 +804,79 @@ for (i in 1:13) {
 
 ```  
     
-### Parametric ANOVA with Nesting
+### LME with Nesting
+#### Tree Nested Within Site
+#### Parametric ANOVA
+```{r}
+
+v <- leaf_vars_norm[7] # change number here to change which variable is being tested
+
+# Fitting LME models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
+fit_dfe <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name/tree)")), # tree nested within site
+                data = leafSEM_normal)
+fit_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name/tree)")), 
+                data = leafSEM_normal)
+fit_int_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")), 
+                    data = leafSEM_normal)
+fit_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name/tree)")), 
+                data = leafSEM_normal)
+fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name/tree)")), 
+                    data = leafSEM_normal)
+
+# ANOVA-style p-values for fixed effects
+anova_isa <- anova(fit_int_isa) # change the model name to see the ANOVA output
+
+# checking between-site variance
+    
+    site_variance <- sapply(leaf_vars_norm[1:13], function(v) {
+      
+      # Skip if all values are NA
+      if (all(is.na(leafSEM_normal[[v]]))) return(NA)
+      
+      fit <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")),
+                  data = leafSEM_normal, REML = TRUE)
+      as.data.frame(VarCorr(fit))$vcov[1]
+    })
+    
+    data.frame(variable = leaf_vars_norm[1:13], site_variance = site_variance)
+
+```
+
+#### Non-parametric ANOVA
+```{r}
+library(ARTool)
+
+v <- leaf_vars_unt[13] # change number here to change which variable is being tested
+
+# Fitting ART models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
+art_dfe      <- art(as.formula(paste(v, "~ dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_isa      <- art(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_int_isa  <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_dist     <- art(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_int_dist <- art(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+
+# ANOVA-style F-tests for fixed effects
+anova_isa <- anova(art_int_isa) # change model name to see ANOVA output
+
+# checking between-site variance
+site_variance <- sapply(leaf_vars_unt[1:13], function(v) {
+  
+  if (all(is.na(leafSEM_unt[[v]]))) return(NA)
+  
+  m <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+           data = leafSEM_unt)
+  
+  fit <- artlm(m, "urb_cat_isa:dfe") # lmer fit on the aligned ranks for this term
+  as.data.frame(VarCorr(fit))$vcov[1]
+})
+
+data.frame(variable = leaf_vars_norm[1:13], site_variance = site_variance)
+```
 
 ### Loop for Figures (Means)
 ```{r}
@@ -2839,8 +2923,9 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
     
     # printing figures
     ggsave("ambient_PM2.5_open_cat_figs_mean.png", plot = ambient_PM2.5_open_cat_figs, path = file.path(figures_dir,"Categorical/Ambient Figs w Open"), width = 8,
-      height = 4.5, bg = "white")    
-    
+      height = 4.5, bg = "white")   
+    ggsave("ambient_PM2.5_open_cat_figs_median.png", plot = ambient_PM2.5_open_urb_cat_isa_medians, path = file.path(figures_dir,"Categorical/Ambient Figs w Open"), width = 4,
+      height = 3.5, bg = "white")    
     
 ```
 
@@ -6596,6 +6681,112 @@ single_cell_foliar_PM2.5_fig <- ggplot(data=sum_single_cell_foliar_PM2.5,mapping
   guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
   theme(axis.title=element_text(size=15))+
   scale_color_manual(values=c("#999999", "#060000"))
+
+ggsave("single_cell_foliar_PM2.5_fig.png", plot = single_cell_foliar_PM2.5_fig, path = file.path(dropbox,"Microbial/Figures"), width = 6,
+  height = 6, bg = "white")
+
+```
+
+
+## Foliar PM by Stomatal Occlusion
+```{r}
+# linear models for the two variables
+      all <- lm(LeafSEM_resp_varsxUNESites$log_foliar_PM2.5~LeafSEM_resp_varsxUNESites$perc_occluded_PM)
+      edge <- lm(LeafSEM_resp_varsxUNESites$log_foliar_PM2.5[LeafSEM_resp_varsxUNESites$dfe == 0]~LeafSEM_resp_varsxUNESites$perc_occluded_PM[LeafSEM_resp_varsxUNESites$dfe == 0])
+      interior <- lm(LeafSEM_resp_varsxUNESites$log_foliar_PM2.5[LeafSEM_resp_varsxUNESites$dfe == 90]~LeafSEM_resp_varsxUNESites$perc_occluded_PM[LeafSEM_resp_varsxUNESites$dfe == 90])
+      urban <- lm(LeafSEM_resp_varsxUNESites$log_foliar_PM2.5[LeafSEM_resp_varsxUNESites$urb_cat_isa == "Urban"]~LeafSEM_resp_varsxUNESites$perc_occluded_PM[LeafSEM_resp_varsxUNESites$urb_cat_isa == "Urban"])
+      rural <- lm(LeafSEM_resp_varsxUNESites$log_foliar_PM2.5[LeafSEM_resp_varsxUNESites$urb_cat_isa == "Rural"]~LeafSEM_resp_varsxUNESites$perc_occluded_PM[LeafSEM_resp_varsxUNESites$urb_cat_isa == "Rural"])      
+      
+    # making significant lines solid and non-significant lines dashed
+      edgeline <- ifelse(as.numeric(edge$coefficients[2]) < 0.05, "solid", "dashed")
+      interiorline <- ifelse(as.numeric(interior$coefficients[2]) < 0.05, "solid", "dashed")
+      urbanline <- ifelse(as.numeric(urban$coefficients[2]) < 0.05, "solid", "dashed")
+      ruralline <- ifelse(as.numeric(rural$coefficients[2]) < 0.05, "solid", "dashed")
+      
+    # making labels
+      label_dfe <- paste0("Edge: rho = ",signif(edge$estimate, digits = 2),
+                        ifelse(edge$p.value > 0.001,
+                               paste(", p =",signif(edge$p.value,digits=2)), " , p < 0.001"),
+                        "\nInterior: rho = ",signif(interior$estimate, digits = 2),
+                        ifelse(interior$p.value > 0.001,
+                               paste(", p =",signif(interior$p.value,digits=2)), " , p < 0.001"),
+                        "\nAll: rho = ",signif(all$estimate, digits = 2),
+                        ifelse(all$p.value > 0.001,
+                               paste(", p =",signif(all$p.value, digits = 2)), " , p < 0.001")
+                        )
+      
+      label_urb <- paste0("Urban: rho = ",signif(urban$estimate, digits = 2),
+                        ifelse(urban$p.value > 0.001,
+                               paste(", p =",signif(urban$p.value,digits=2)), " , p < 0.001"),
+                        "\nRural: rho = ",signif(rural$estimate, digits = 2),
+                        ifelse(rural$p.value > 0.001,
+                               paste(", p =",signif(rural$p.value,digits=2)), " , p < 0.001"),
+                        "\nAll: rho = ",signif(all$estimate, digits = 2),
+                        ifelse(all$p.value > 0.001,
+                               paste(", p =",signif(all$p.value, digits = 2)), " , p < 0.001")
+                        )
+      
+    
+# figures
+
+fol_element_ISA_dfe <- 
+  ggplot(data=LeafSEM_resp_varsxUNESites,mapping=aes(x=perc_occluded_PM,y=log_foliar_PM2.5,col=dfe)) +
+  geom_point(position = position_dodge(width = 0.3), size = 3) +
+  theme_minimal() +   
+  theme(plot.title = element_text(size=25),
+                  legend.position = "right",
+                  panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  axis.line = element_line(colour = "black"),
+                  axis.text.x = element_text(color = "black", size=15),
+                  axis.title.x = element_text(color = "black", size=15),
+                  axis.text.y = element_text(color = "black", size=15),
+                  axis.title.y = element_text(color = "black", size=15),
+                  axis.ticks = element_line(linewidth = 0.5),
+                  plot.margin = margin(10, 10, 10, 10)) +
+            guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
+  labs(title = " ") +
+  guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
+  theme(axis.title=element_text(size=15))+
+  scale_color_manual(values=c("#999999", "#060000")) +
+  geom_smooth(data = subset(LeafSEM_resp_varsxUNESites, dfe == 0),
+                          method = "lm",
+                          se = FALSE,
+                          linetype = edgeline, na.rm = TRUE) +
+  geom_smooth(data = subset(LeafSEM_resp_varsxUNESites, dfe == 90),
+                          method = "lm",
+                          se = FALSE,
+                          linetype = interiorline, na.rm = TRUE) 
+
+fol_element_ISA_urb <- 
+  ggplot(data=LeafSEM_resp_varsxUNESites,mapping=aes(x=perc_occluded_PM,y=log_foliar_PM2.5,col=urb_cat_isa)) +
+  geom_point(position = position_dodge(width = 0.3), size = 3) +
+  theme_minimal() +   
+  theme(plot.title = element_text(size=25),
+                  legend.position = "right",
+                  panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  axis.line = element_line(colour = "black"),
+                  axis.text.x = element_text(color = "black", size=15),
+                  axis.title.x = element_text(color = "black", size=15),
+                  axis.text.y = element_text(color = "black", size=15),
+                  axis.title.y = element_text(color = "black", size=15),
+                  axis.ticks = element_line(linewidth = 0.5),
+                  plot.margin = margin(10, 10, 10, 10)) +
+  labs(title = " ") +
+  guides(color = guide_legend(title = "Urb. Category \nby %ISA")) +
+  theme(axis.title=element_text(size=15))+
+  scale_color_manual(values=c("#eab676", "#154c79")) +
+  geom_smooth(data = subset(LeafSEM_resp_varsxUNESites, urb_cat_isa == "Urban"),
+                          method = "lm",
+                          se = FALSE,
+                          linetype = urbanline, na.rm = TRUE) +
+  geom_smooth(data = subset(LeafSEM_resp_varsxUNESites, urb_cat_isa == "Rural"),
+                          method = "lm",
+                          se = FALSE,
+                          linetype = ruralline, na.rm = TRUE) 
+
+
 
 ggsave("single_cell_foliar_PM2.5_fig.png", plot = single_cell_foliar_PM2.5_fig, path = file.path(dropbox,"Microbial/Figures"), width = 6,
   height = 6, bg = "white")

@@ -24,11 +24,12 @@ library(recolorize) # to read in the legend
 library(grid) # for making multipanel figure
 library(gtable) # for making multipanel figure
 library(tidyverse) # for making spearman correlation matrices
+library(glmmTMB) # for running generalized linear models
 
 
 # === FILE PATHS (update these if running on another machine) ===
 dropbox     <- "/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode"
-project     <- file.path(dropbox, "Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode/PMComp")
+project     <- file.path(dropbox, "PMComp")
 data_dir    <- file.path(project, "csvs")
 figures_dir <- file.path(project, "Figures")
 stats_dir <- file.path(project, "Statistics Results")
@@ -71,6 +72,7 @@ stats_dir <- file.path(project, "Statistics Results")
   AmbientPMCompxUNESites$urb_cat_isa <- as.factor(AmbientPMCompxUNESites$urb_cat_isa)
   AmbientPMCompxUNESites$urb_cat_dist <- as.factor(AmbientPMCompxUNESites$urb_cat_dist)
   AmbientPMCompxUNESites$edge_type <- as.factor(AmbientPMCompxUNESites$edge_type)
+  AmbientPMCompxUNESites$replicate <- as.factor(AmbientPMCompxUNESites$sampler)
   
 # Steve's function to calculate mean and standard error for variable of interest, which will be important for all these stats and figures
 # data_summary <- function(data, varname, groupnames){
@@ -196,11 +198,11 @@ ci95_median_boot <- function(x, conf = 0.95, R = 5000, na.rm = TRUE) {
     # creating a summary column for traffic-related metals
       # list of traffic-associated metals (including those not included in the foliar set): Cu, Mn, Fe, Zn, Ba, Sn, Ni, Mo and Sb (subset of list from Pant and Harrison 2013 review)
     
-    AmbientPMCompxUNESites$"traffic_extra" <- rowSums(AmbientPMCompxUNESites[,c(23,20,21,24,30,28,22,27,29)])
+    # AmbientPMCompxUNESites$"traffic_extra" <- rowSums(AmbientPMCompxUNESites[,c(23,20,21,24,30,28,22,27,29)])
     
     # rearranging the dataset so that these columns come right after the other elements
     
-    AmbientPMCompxUNESites <- AmbientPMCompxUNESites[,c(1:44,54:58,45:53)]
+    AmbientPMCompxUNESites <- AmbientPMCompxUNESites[,c(1:44,55:58,45:54)]
     
 
 ```
@@ -218,6 +220,7 @@ ambient_to_combine$particle_source <- "Ambient"
 # identifying which columns the ambient and foliar element data have in common (should be about half the elements, because ambient PM had a larger suite of elements analyzed, as well as the UNE site info and our new particle_source column). check to make sure nothing is missing, then make these columns into a vector.
 
 incommon <- intersect(colnames(foliar_to_combine), colnames(ambient_to_combine))
+incommon <- incommon[c(1,3:36,2)]
 
 AllCompxUNESites <- rbind(foliar_to_combine[,incommon], ambient_to_combine[,incommon])
 
@@ -226,8 +229,9 @@ AllCompxUNESites$particle_source <- as.factor(AllCompxUNESites$particle_source)
 setwd(data_dir)
 write.csv(AllCompxUNESites,"AllCompxUNESites.csv", row.names=FALSE)
 
+
 # defining list of element names
-        foliar_element_names <- colnames(FoliarPMCompxUNESites)[11:37]
+        foliar_element_names <- colnames(FoliarPMCompxUNESites)[12:37]
         ambient_element_names <- colnames(AmbientPMCompxUNESites)[5:48]
         all_element_names <- colnames(FoliarPMCompxUNESites)[12:37]
 
@@ -342,883 +346,396 @@ setwd(data_dir)
 #### Ambient & Foliar
 ##### ART ANOVA (includes open sites for ambient)
 ```{r}
-# Foliar
-    
-    # create an empty matrix, with a row for each element and a column each for: p-value on edge vs. interior, p-value for urban vs rural (by dist), p-value for interaction term (by dist), p-value for urban vs rural (by %ISA), p-value for interaction term (by %ISA)
-    
-        foliar_PM_art_pvals <- matrix(data=NA, nrow=26, ncol=6)
-        colnames(foliar_PM_art_pvals) <- c("Element","Edge_vs_Interior","Urb_v_Rural_Dist","Interaction_Dist","Urb_v_Rural_ISA","Interaction_ISA" )
-        foliar_PM_art_pvals[,1] <- all_element_names
+    # === FOLIAR ===
         
-    # create an empty matrix, with a row for each element and a column for each pairwise comparison
+        # Initialize matrices
+        foliar_PM_art_pvals <- matrix(data = NA, nrow = 26, ncol = 6)
+        colnames(foliar_PM_art_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                            "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA")
+        foliar_PM_art_pvals[, 1] <- all_element_names
         
-        foliar_PM_art_pairwise_dist <- matrix(data=NA, nrow=26, ncol=11)
-        foliar_PM_art_pairwise_dist[,1] <- all_element_names
-        colnames(foliar_PM_art_pairwise_dist) <- 
-          c("Element",
-            "Rural,0 - Rural,90",
-            "Rural,0 - Urban,0",
-            "Rural,0 - Urban,90",
-            "Rural,90 - Urban,0",
-            "Rural,90 - Urban,90",
-            "Urban,0 - Urban,90",
-            "Rural0",
-            "Rural90",
-            "Urban0",
-            "Urban90"
-            )
+        pairwise_cols <- c("Element", "Rural,0 - Rural,90", "Rural,0 - Urban,0",
+                           "Rural,0 - Urban,90", "Rural,90 - Urban,0", "Rural,90 - Urban,90",
+                           "Urban,0 - Urban,90", "Rural0", "Rural90", "Urban0", "Urban90")
         
-        foliar_PM_art_pairwise_isa <- matrix(data=NA, nrow=26, ncol=11)
-        foliar_PM_art_pairwise_isa[,1] <- all_element_names
-        colnames(foliar_PM_art_pairwise_isa) <- 
-          c("Element",
-            "Rural,0 - Rural,90",
-            "Rural,0 - Urban,0",
-            "Rural,0 - Urban,90",
-            "Rural,90 - Urban,0",
-            "Rural,90 - Urban,90",
-            "Urban,0 - Urban,90",
-            "Rural0",
-            "Rural90",
-            "Urban0",
-            "Urban90"
-            )
+        foliar_PM_art_pairwise_dist <- matrix(data = NA, nrow = 26, ncol = 11,
+                                               dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_pairwise_dist[, 1] <- all_element_names
         
-    # now the matrices are ready to go, and we can fill it with these p-values using the loop below
-    
-    for (i in c(1:26)) {
-      
-    element <- all_element_names[i]
-    no.nas <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites[, element]), ]
-    
+        foliar_PM_art_pairwise_isa <- matrix(data = NA, nrow = 26, ncol = 11,
+                                              dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_pairwise_isa[, 1] <- all_element_names
+        
+        # Loop
+        for (i in 1:26) {
+          element <- all_element_names[i]
+          
+          # Clean data for this element
+          dat <- FoliarPMCompxUNESites[complete.cases(FoliarPMCompxUNESites[, element]), ]
+          
+          # Skip if all NA
+          if (nrow(dat) == 0) next
+          
+          tryCatch({
+            
+            # Fit 5 models
+            fit_dfe      <- art(as.formula(paste(element, "~ dfe")), data = dat)
+            fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist")), data = dat)
+            fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa")), data = dat)
+            fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe")), data = dat)
+            fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe")), data = dat)
+            
+            # ANOVA summaries
+            aov_dfe      <- anova(fit_dfe)
+            aov_dist     <- anova(fit_dist)
+            aov_isa      <- anova(fit_isa)
+            aov_int_dist <- anova(fit_int_dist)
+            aov_int_isa  <- anova(fit_int_isa)
+            
+            # Extract p-values
+            foliar_PM_art_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+            
+            # Pairwise comparisons — run on interaction models
+            pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+            pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+            
+            letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+            letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+            
+            # Fill pairwise matrices
+            foliar_PM_art_pairwise_dist[i, 2:7]  <- pw_dist$p.value[1:6]
+            foliar_PM_art_pairwise_dist[i, 8:11] <- letters_dist$Letter[1:4]
+            
+            foliar_PM_art_pairwise_isa[i, 2:7]  <- pw_isa$p.value[1:6]
+            foliar_PM_art_pairwise_isa[i, 8:11] <- letters_isa$Letter[1:4]
+            
+          }, error = function(e) {
+            message("Failed for element: ", element, " — ", e$message)
+          })
+        }
+        
+        # Post-processing helper function
+        finalize_matrix <- function(mat, numeric_cols, filepath) {
+          df <- as.data.frame(mat)
+          df[, numeric_cols] <- lapply(df[, numeric_cols], as.numeric)
+          df[] <- lapply(df, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+          write.csv(df, filepath, row.names = TRUE)
+          df
+        }
+        
+        foliar_PM_art_pvals <- finalize_matrix(
+          foliar_PM_art_pvals, 2:6,
+          file.path(stats_dir, "foliar_PM_art_pvals.csv"))
+        
+        foliar_PM_art_pairwise_dist <- finalize_matrix(
+          foliar_PM_art_pairwise_dist, 2:7,
+          file.path(stats_dir, "foliar_PM_art_pairwise_dist.csv"))
+        
+        foliar_PM_art_pairwise_isa <- finalize_matrix(
+          foliar_PM_art_pairwise_isa, 2:7,
+          file.path(stats_dir, "foliar_PM_art_pairwise_isa.csv"))
 
-    
-    # ART Anova
-        
-      # Edge vs. Interior
-      formula <- as.formula(paste(all_element_names[i], "~ dfe"))
-      X_ART_EvI <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-      X_aovART_EvI <- anova(X_ART_EvI)
-      X_aovART_EvI_pval <- X_aovART_EvI["dfe","Pr(>F)"] # this extracts the p-value for edge vs. interior
-      foliar_PM_art_pvals[i,2] <- X_aovART_EvI_pval # this places it into the matrix we made
-      
-      # Urban vs. Rural
-        # dist
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_dist"))
-        X_ART_dist <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_dist <- anova(X_ART_dist)
-        U_R_art_dist_pval <- X_aovART_dist["urb_cat_dist","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        foliar_PM_art_pvals[i,3] <- U_R_art_dist_pval # this places it into the matrix we made
-        
-        # isa
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_isa"))
-        X_ART_isa <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_isa <- anova(X_ART_isa)
-        U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        foliar_PM_art_pvals[i,5] <- U_R_art_isa_pval # this places it into the matrix we made
-      
-      # Urban vs. Rural and Interaction Term
-        # dist
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_dist*dfe"))
-        X_ART_dist <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_dist <- anova(X_ART_dist)
-        Int_art_dist_pval <- X_aovART_dist["urb_cat_dist:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-        foliar_PM_art_pvals[i,4] <- Int_art_dist_pval # this places it into the matrix we made
+# === AMBIENT ===
 
-        # isa
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_isa*dfe"))
-        X_ART_isa <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_isa <- anova(X_ART_isa)
-        U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        Int_art_isa_pval <- X_aovART_isa["urb_cat_isa:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-        foliar_PM_art_pvals[i,6] <- Int_art_isa_pval # this places it into the matrix we made
-    
-    
-    # pairwise comparisons
-    
-      # isa
-      art.con_X_ART_isa <- art.con(X_ART_isa,~urb_cat_isa*dfe, adjust="none")
-      art.con_X_ART_isa <- as.data.frame(art.con_X_ART_isa)
-      letters_isa <- cldList(
-      p.value ~ contrast,
-      data = art.con_X_ART_isa,
-      threshold = 0.05  
-    )
-        # placing these results into our matrix
-      
-          # pairwise comparisons
-          foliar_PM_art_pairwise_isa[i,2] <- art.con_X_ART_isa$p.value[1]
-          foliar_PM_art_pairwise_isa[i,3] <- art.con_X_ART_isa$p.value[2]
-          foliar_PM_art_pairwise_isa[i,4] <- art.con_X_ART_isa$p.value[3]
-          foliar_PM_art_pairwise_isa[i,5] <- art.con_X_ART_isa$p.value[4]
-          foliar_PM_art_pairwise_isa[i,6] <- art.con_X_ART_isa$p.value[5]
-          foliar_PM_art_pairwise_isa[i,7] <- art.con_X_ART_isa$p.value[6]
-          
-          # letters
-          foliar_PM_art_pairwise_isa[i,8] <- letters_isa$Letter[1]
-          foliar_PM_art_pairwise_isa[i,9] <- letters_isa$Letter[2]
-          foliar_PM_art_pairwise_isa[i,10] <- letters_isa$Letter[3]
-          foliar_PM_art_pairwise_isa[i,11] <- letters_isa$Letter[4]
-          
-    
-      # dist
-      art.con_X_ART_dist <- art.con(X_ART_dist,~urb_cat_dist*dfe, adjust="none")
-      art.con_X_ART_dist <- as.data.frame(art.con_X_ART_dist)
-      letters_dist <- cldList(
-      p.value ~ contrast,
-      data = art.con_X_ART_dist,
-      threshold = 0.05
-      )
-      
-        # placing these results into our matrix
-      
-          # pairwise comparisons
-          foliar_PM_art_pairwise_dist[i,2] <- art.con_X_ART_dist$p.value[1]
-          foliar_PM_art_pairwise_dist[i,3] <- art.con_X_ART_dist$p.value[2]
-          foliar_PM_art_pairwise_dist[i,4] <- art.con_X_ART_dist$p.value[3]
-          foliar_PM_art_pairwise_dist[i,5] <- art.con_X_ART_dist$p.value[4]
-          foliar_PM_art_pairwise_dist[i,6] <- art.con_X_ART_dist$p.value[5]
-          foliar_PM_art_pairwise_dist[i,7] <- art.con_X_ART_dist$p.value[6]
-          
-          # letters
-          foliar_PM_art_pairwise_dist[i,8] <- letters_dist$Letter[1]
-          foliar_PM_art_pairwise_dist[i,9] <- letters_dist$Letter[2]
-          foliar_PM_art_pairwise_dist[i,10] <- letters_dist$Letter[3]
-          foliar_PM_art_pairwise_dist[i,11] <- letters_dist$Letter[4]
-    }
-        # this is the matrix with p-values! now we make it into a data frame 
-        foliar_PM_art_pvals <- as.data.frame(foliar_PM_art_pvals)
-        
-        # make sure all the numbers are classified as "numeric"
-        foliar_PM_art_pvals$Edge_vs_Interior <- as.numeric(foliar_PM_art_pvals$Edge_vs_Interior)
-        foliar_PM_art_pvals$Urb_v_Rural_Dist <- as.numeric(foliar_PM_art_pvals$Urb_v_Rural_Dist)
-        foliar_PM_art_pvals$Interaction_Dist <- as.numeric(foliar_PM_art_pvals$Interaction_Dist)
-        foliar_PM_art_pvals$Urb_v_Rural_ISA <- as.numeric(foliar_PM_art_pvals$Urb_v_Rural_ISA)
-        foliar_PM_art_pvals$Interaction_ISA <- as.numeric(foliar_PM_art_pvals$Interaction_ISA)
-        
-        # reduce all p-values in the matrix to two decimal points
-        foliar_PM_art_pvals[] <- lapply(foliar_PM_art_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-        
-        # this is the matrix with p-values! now we make it into a data frame 
-        foliar_PM_art_pvals <- as.data.frame(foliar_PM_art_pvals)
-        
-        # write the data frame to a csv
-        write.csv(foliar_PM_art_pvals, file.path(stats_dir, "foliar_PM_art_pvals.csv"), row.names = TRUE)
-        
-    # the other matrices store pairwise comparisons & letters to indicate significance
-        
-        # dist
-          foliar_PM_art_pairwise_dist <- as.data.frame(foliar_PM_art_pairwise_dist)
-        
-          # making sure everything is numeric
-            foliar_PM_art_pairwise_dist[,2] <- as.numeric(foliar_PM_art_pairwise_dist[,2])
-            foliar_PM_art_pairwise_dist[,3] <- as.numeric(foliar_PM_art_pairwise_dist[,3])
-            foliar_PM_art_pairwise_dist[,4] <- as.numeric(foliar_PM_art_pairwise_dist[,4])
-            foliar_PM_art_pairwise_dist[,5] <- as.numeric(foliar_PM_art_pairwise_dist[,5])
-            foliar_PM_art_pairwise_dist[,6] <- as.numeric(foliar_PM_art_pairwise_dist[,6])
-            foliar_PM_art_pairwise_dist[,7] <- as.numeric(foliar_PM_art_pairwise_dist[,7])
-            
-          # reduce all p-values to two decimal points
-            foliar_PM_art_pairwise_dist[] <- lapply(foliar_PM_art_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-            
-          # write the data frame to a csv
-            write.csv(foliar_PM_art_pairwise_dist, file.path(stats_dir,"foliar_PM_art_pairwise_dist.csv"), row.names = TRUE)
-        
-        # isa
-          foliar_PM_art_pairwise_isa <- as.data.frame(foliar_PM_art_pairwise_isa)
-          foliar_PM_art_pairwise_isa <- as.data.frame(foliar_PM_art_pairwise_isa)
-        
-          # making sure everything is numeric
-            foliar_PM_art_pairwise_isa[,2] <- as.numeric(foliar_PM_art_pairwise_isa[,2])
-            foliar_PM_art_pairwise_isa[,3] <- as.numeric(foliar_PM_art_pairwise_isa[,3])
-            foliar_PM_art_pairwise_isa[,4] <- as.numeric(foliar_PM_art_pairwise_isa[,4])
-            foliar_PM_art_pairwise_isa[,5] <- as.numeric(foliar_PM_art_pairwise_isa[,5])
-            foliar_PM_art_pairwise_isa[,6] <- as.numeric(foliar_PM_art_pairwise_isa[,6])
-            foliar_PM_art_pairwise_isa[,7] <- as.numeric(foliar_PM_art_pairwise_isa[,7])
-            
-          # reduce all p-values to two decimal points
-            foliar_PM_art_pairwise_isa[] <- lapply(foliar_PM_art_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-            
-          # write the data frame to a csv
-            write.csv(foliar_PM_art_pairwise_isa, file.path(stats_dir,"foliar_PM_art_pairwise_isa.csv"), row.names = TRUE)
-            
-            
-# Ambient
-  
-  # create an empty matrix, with a row for each response variable and a column each for: p-value on dfe, p-value for urban vs rural (by dist), p-value for interaction term (by dist), p-value for urban vs rural (by %ISA), p-value for interaction term (by %ISA)
-  
-      ambient_PM_art_pvals <- matrix(data=NA, nrow=44, ncol=6)
-      colnames(ambient_PM_art_pvals) <- c("Element","Edge_vs_Interior","Urb_v_Rural_Dist","Interaction_Dist","Urb_v_Rural_ISA","Interaction_ISA" )
-      ambient_PM_art_pvals[,1] <- ambient_element_names
-  
-  
-  # create an empty matrix, with a row for each element and a column for each pairwise comparison
-      
-      ambient_PM_art_pairwise_dist <- matrix(data=NA, nrow=44, ncol=22)
-      ambient_PM_art_pairwise_dist[,1] <- ambient_element_names
-      colnames(ambient_PM_art_pairwise_dist) <- 
-        c("Element",
-          "Rural,0 - Rural,90",
-          "Rural,0 - Rural,Open",
-          "Rural,0 - Urban,0",
-          "Rural,0 - Urban,90",
-          "Rural,0 - Urban,Open",
-          "Rural,90 - Rural,Open",
-          "Rural,90 - Urban,0",
-          "Rural,90 - Urban,90",
-          "Rural,90 - Urban,Open",
-          "Rural,Open - Urban,0",
-          "Rural,Open - Urban,90",
-          "Rural,Open - Urban,Open",
-          "Urban,0 - Urban,90",
-          "Urban,0 - Urban,Open",
-          "Urban,90 - Urban,Open",
-          "Rural0",
-          "Rural90",
-          "RuralOpen",
-          "Urban0",
-          "Urban90",
-          "UrbanOpen"
-          )
-      
-      ambient_PM_art_pairwise_isa <- matrix(data=NA, nrow=44, ncol=22)
-      ambient_PM_art_pairwise_isa[,1] <- ambient_element_names
-      colnames(ambient_PM_art_pairwise_isa) <- 
-        c("Element",
-          "Rural,0 - Rural,90",
-          "Rural,0 - Rural,Open",
-          "Rural,0 - Urban,0",
-          "Rural,0 - Urban,90",
-          "Rural,0 - Urban,Open",
-          "Rural,90 - Rural,Open",
-          "Rural,90 - Urban,0",
-          "Rural,90 - Urban,90",
-          "Rural,90 - Urban,Open",
-          "Rural,Open - Urban,0",
-          "Rural,Open - Urban,90",
-          "Rural,Open - Urban,Open",
-          "Urban,0 - Urban,90",
-          "Urban,0 - Urban,Open",
-          "Urban,90 - Urban,Open",
-          "Rural0",
-          "Rural90",
-          "RuralOpen",
-          "Urban0",
-          "Urban90",
-          "UrbanOpen"
-          )
-      
-  # now the matrices are ready to go, and we can fill it with these p-values using the loop below
-  
-  library(ARTool)
-  
-  for (i in c(1:44)) {
-  
+# Initialize matrices
+ambient_PM_art_pvals <- matrix(data = NA, nrow = 44, ncol = 6)
+colnames(ambient_PM_art_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                     "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA")
+ambient_PM_art_pvals[, 1] <- ambient_element_names
+
+pairwise_cols_ambient <- c("Element",
+                            "Rural,0 - Rural,90",
+                            "Rural,0 - Rural,Open",
+                            "Rural,0 - Urban,0",
+                            "Rural,0 - Urban,90",
+                            "Rural,0 - Urban,Open",
+                            "Rural,90 - Rural,Open",
+                            "Rural,90 - Urban,0",
+                            "Rural,90 - Urban,90",
+                            "Rural,90 - Urban,Open",
+                            "Rural,Open - Urban,0",
+                            "Rural,Open - Urban,90",
+                            "Rural,Open - Urban,Open",
+                            "Urban,0 - Urban,90",
+                            "Urban,0 - Urban,Open",
+                            "Urban,90 - Urban,Open",
+                            "Rural0", "Rural90", "RuralOpen",
+                            "Urban0", "Urban90", "UrbanOpen")
+
+ambient_PM_art_pairwise_dist <- matrix(data = NA, nrow = 44, ncol = 22,
+                                        dimnames = list(NULL, pairwise_cols_ambient))
+ambient_PM_art_pairwise_dist[, 1] <- ambient_element_names
+
+ambient_PM_art_pairwise_isa <- matrix(data = NA, nrow = 44, ncol = 22,
+                                       dimnames = list(NULL, pairwise_cols_ambient))
+ambient_PM_art_pairwise_isa[, 1] <- ambient_element_names
+
+# Loop
+library(ARTool)
+
+for (i in 1:44) {
   element <- ambient_element_names[i]
   
-  no.nas <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites[, element]), ]
+  # Clean data for this element
+  dat <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites[, element]), ]
   
-  # ART Anova
-      
-    # Edge vs. Interior
-    formula <- as.formula(paste(ambient_element_names[i], "~ dfe"))
-    X_ART_EvI <- art(formula, data = no.nas)
-    X_aovART_EvI <- anova(X_ART_EvI)
-    X_aovART_EvI_pval <- X_aovART_EvI["dfe","Pr(>F)"] # this extracts the p-value for edge vs. interior
-    ambient_PM_art_pvals[i,2] <- X_aovART_EvI_pval # this places it into the matrix we made
+  # Skip if all NA
+  if (nrow(dat) == 0) next
+  
+  tryCatch({
     
-    # Urban vs Rural
-      # dist
-      formula <- as.formula(paste(ambient_element_names[i], "~urb_cat_dist"))
-      X_ART_dist <- art(formula, data = no.nas)
-      X_aovART_dist <- anova(X_ART_dist)
-      U_R_art_dist_pval <- X_aovART_dist["urb_cat_dist","Pr(>F)"] # this extracts the p-value for urban vs. rural
-      ambient_PM_art_pvals[i,3] <- U_R_art_dist_pval # this places it into the matrix we made
-      
-      # isa
-      formula <- as.formula(paste(ambient_element_names[i], "~urb_cat_isa"))
-      X_ART_isa <- art(formula, data = no.nas)
-      X_aovART_isa <- anova(X_ART_isa)
-      U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-      ambient_PM_art_pvals[i,5] <- U_R_art_isa_pval # this places it into the matrix we made
-      
-    # Urban vs. Rural and Interaction Term
-      # dist
-      formula <- as.formula(paste(ambient_element_names[i], "~urb_cat_dist*dfe"))
-      X_ART_dist <- art(formula, data = no.nas)
-      X_aovART_dist <- anova(X_ART_dist)
-      Int_art_dist_pval <- X_aovART_dist["urb_cat_dist:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-      ambient_PM_art_pvals[i,4] <- Int_art_dist_pval # this places it into the matrix we made
+    # Fit 5 models
+    fit_dfe      <- art(as.formula(paste(element, "~ dfe")), data = dat)
+    fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist")), data = dat)
+    fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa")), data = dat)
+    fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe")), data = dat)
+    fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe")), data = dat)
     
-    # Urban vs. Rural and Interaction Term (by %ISA)
-      # isa
-      formula <- as.formula(paste(ambient_element_names[i], "~urb_cat_isa*dfe"))
-      X_ART_isa <- art(formula, data = no.nas)
-      X_aovART_isa <- anova(X_ART_isa)
-      Int_art_isa_pval <- X_aovART_isa["urb_cat_isa:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-      ambient_PM_art_pvals[i,6] <- Int_art_isa_pval # this places it into the matrix we made
-  
-  # pairwise comparisons
-  
-    # isa
-    art.con_X_ART_isa <- art.con(X_ART_isa,~urb_cat_isa*dfe, adjust="none")
-    art.con_X_ART_isa <- as.data.frame(art.con_X_ART_isa)
-    letters_isa <- cldList(
-    p.value ~ contrast,
-    data = art.con_X_ART_isa,
-    threshold = 0.05  
-  )
-      # placing these results into our matrix
+    # ANOVA summaries
+    aov_dfe      <- anova(fit_dfe)
+    aov_dist     <- anova(fit_dist)
+    aov_isa      <- anova(fit_isa)
+    aov_int_dist <- anova(fit_int_dist)
+    aov_int_isa  <- anova(fit_int_isa)
     
-        # pairwise comparisons
-        ambient_PM_art_pairwise_isa[i,2] <- art.con_X_ART_isa$p.value[1]
-        ambient_PM_art_pairwise_isa[i,3] <- art.con_X_ART_isa$p.value[2]
-        ambient_PM_art_pairwise_isa[i,4] <- art.con_X_ART_isa$p.value[3]
-        ambient_PM_art_pairwise_isa[i,5] <- art.con_X_ART_isa$p.value[4]
-        ambient_PM_art_pairwise_isa[i,6] <- art.con_X_ART_isa$p.value[5]
-        ambient_PM_art_pairwise_isa[i,7] <- art.con_X_ART_isa$p.value[6]
-        ambient_PM_art_pairwise_isa[i,8] <- art.con_X_ART_isa$p.value[7]
-        ambient_PM_art_pairwise_isa[i,9] <- art.con_X_ART_isa$p.value[8]
-        ambient_PM_art_pairwise_isa[i,10] <- art.con_X_ART_isa$p.value[9]
-        ambient_PM_art_pairwise_isa[i,11] <- art.con_X_ART_isa$p.value[10]
-        ambient_PM_art_pairwise_isa[i,12] <- art.con_X_ART_isa$p.value[11]
-        ambient_PM_art_pairwise_isa[i,13] <- art.con_X_ART_isa$p.value[12]
-        ambient_PM_art_pairwise_isa[i,14] <- art.con_X_ART_isa$p.value[13]
-        ambient_PM_art_pairwise_isa[i,15] <- art.con_X_ART_isa$p.value[14]
-        ambient_PM_art_pairwise_isa[i,16] <- art.con_X_ART_isa$p.value[15]
-        
-        # letters
-        ambient_PM_art_pairwise_isa[i,17] <- letters_isa$Letter[1]
-        ambient_PM_art_pairwise_isa[i,18] <- letters_isa$Letter[2]
-        ambient_PM_art_pairwise_isa[i,19] <- letters_isa$Letter[3]
-        ambient_PM_art_pairwise_isa[i,20] <- letters_isa$Letter[4]
-        ambient_PM_art_pairwise_isa[i,21] <- letters_isa$Letter[5]
-        ambient_PM_art_pairwise_isa[i,22] <- letters_isa$Letter[6]
-        
-  
-    # dist
-    art.con_X_ART_dist <- art.con(X_ART_dist,~urb_cat_dist*dfe, adjust="none")
-    art.con_X_ART_dist <- as.data.frame(art.con_X_ART_dist)
-    letters_dist <- cldList(
-    p.value ~ contrast,
-    data = art.con_X_ART_dist,
-    threshold = 0.05
-    )
+    # Extract p-values
+    ambient_PM_art_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+    ambient_PM_art_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+    ambient_PM_art_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+    ambient_PM_art_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+    ambient_PM_art_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
     
-      # placing these results into our matrix
+    # Pairwise comparisons — run on interaction models
+    pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+    pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
     
-        # pairwise comparisons
-        ambient_PM_art_pairwise_dist[i,2] <- art.con_X_ART_dist$p.value[1]
-        ambient_PM_art_pairwise_dist[i,3] <- art.con_X_ART_dist$p.value[2]
-        ambient_PM_art_pairwise_dist[i,4] <- art.con_X_ART_dist$p.value[3]
-        ambient_PM_art_pairwise_dist[i,5] <- art.con_X_ART_dist$p.value[4]
-        ambient_PM_art_pairwise_dist[i,6] <- art.con_X_ART_dist$p.value[5]
-        ambient_PM_art_pairwise_dist[i,7] <- art.con_X_ART_dist$p.value[6]
-        ambient_PM_art_pairwise_dist[i,8] <- art.con_X_ART_dist$p.value[7]
-        ambient_PM_art_pairwise_dist[i,9] <- art.con_X_ART_dist$p.value[8]
-        ambient_PM_art_pairwise_dist[i,10] <- art.con_X_ART_dist$p.value[9]
-        ambient_PM_art_pairwise_dist[i,11] <- art.con_X_ART_dist$p.value[10]
-        ambient_PM_art_pairwise_dist[i,12] <- art.con_X_ART_dist$p.value[11]
-        ambient_PM_art_pairwise_dist[i,13] <- art.con_X_ART_dist$p.value[12]
-        ambient_PM_art_pairwise_dist[i,14] <- art.con_X_ART_dist$p.value[13]
-        ambient_PM_art_pairwise_dist[i,15] <- art.con_X_ART_dist$p.value[14]
-        ambient_PM_art_pairwise_dist[i,16] <- art.con_X_ART_dist$p.value[15]
-        
-        # letters
-        ambient_PM_art_pairwise_dist[i,17] <- letters_dist$Letter[1]
-        ambient_PM_art_pairwise_dist[i,18] <- letters_dist$Letter[2]
-        ambient_PM_art_pairwise_dist[i,19] <- letters_dist$Letter[3]
-        ambient_PM_art_pairwise_dist[i,20] <- letters_dist$Letter[4]
-        ambient_PM_art_pairwise_dist[i,21] <- letters_dist$Letter[5]
-        ambient_PM_art_pairwise_dist[i,22] <- letters_dist$Letter[6]
-  
-  }
-  
-  # this is the matrix with p-values! now we make it into a data frame 
-      ambient_PM_art_pvals <- as.data.frame(ambient_PM_art_pvals)
-      
-      # make sure all the numbers are classified as "numeric"
-      ambient_PM_art_pvals$Edge_vs_Interior <- as.numeric(ambient_PM_art_pvals$Edge_vs_Interior)
-      ambient_PM_art_pvals$Urb_v_Rural_Dist <- as.numeric(ambient_PM_art_pvals$Urb_v_Rural_Dist)
-      ambient_PM_art_pvals$Interaction_Dist <- as.numeric(ambient_PM_art_pvals$Interaction_Dist)
-      ambient_PM_art_pvals$Urb_v_Rural_ISA <- as.numeric(ambient_PM_art_pvals$Urb_v_Rural_ISA)
-      ambient_PM_art_pvals$Interaction_ISA <- as.numeric(ambient_PM_art_pvals$Interaction_ISA)
-      
-      # reduce all p-values in the matrix to two decimal points
-      ambient_PM_art_pvals[] <- lapply(ambient_PM_art_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-      
-      # write the data frame to a csv
-      write.csv(ambient_PM_art_pvals, file.path(stats_dir,"ambient_PM_art_pvals.csv"), row.names = TRUE)
-      
-  # the other matrices store pairwise comparisons & letters to indicate significance
-      
-      # dist
-        ambient_PM_art_pairwise_dist <- as.data.frame(ambient_PM_art_pairwise_dist)
-      
-        # making sure everything is numeric
-          ambient_PM_art_pairwise_dist[,2] <- as.numeric(ambient_PM_art_pairwise_dist[,2])
-          ambient_PM_art_pairwise_dist[,3] <- as.numeric(ambient_PM_art_pairwise_dist[,3])
-          ambient_PM_art_pairwise_dist[,4] <- as.numeric(ambient_PM_art_pairwise_dist[,4])
-          ambient_PM_art_pairwise_dist[,5] <- as.numeric(ambient_PM_art_pairwise_dist[,5])
-          ambient_PM_art_pairwise_dist[,6] <- as.numeric(ambient_PM_art_pairwise_dist[,6])
-          ambient_PM_art_pairwise_dist[,7] <- as.numeric(ambient_PM_art_pairwise_dist[,7])
-          
-        # reduce all p-values to two decimal points
-          ambient_PM_art_pairwise_dist[] <- lapply(ambient_PM_art_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-          
-        # write the data frame to a csv
-          write.csv(ambient_PM_art_pairwise_dist, file.path(stats_dir,"ambient_PM_art_pairwise_dist.csv"), row.names = TRUE)
-      
-      # isa
-        ambient_PM_art_pairwise_isa <- as.data.frame(ambient_PM_art_pairwise_isa)
-        ambient_PM_art_pairwise_isa <- as.data.frame(ambient_PM_art_pairwise_isa)
-      
-        # making sure everything is numeric
-          ambient_PM_art_pairwise_isa[,2] <- as.numeric(ambient_PM_art_pairwise_isa[,2])
-          ambient_PM_art_pairwise_isa[,3] <- as.numeric(ambient_PM_art_pairwise_isa[,3])
-          ambient_PM_art_pairwise_isa[,4] <- as.numeric(ambient_PM_art_pairwise_isa[,4])
-          ambient_PM_art_pairwise_isa[,5] <- as.numeric(ambient_PM_art_pairwise_isa[,5])
-          ambient_PM_art_pairwise_isa[,6] <- as.numeric(ambient_PM_art_pairwise_isa[,6])
-          ambient_PM_art_pairwise_isa[,7] <- as.numeric(ambient_PM_art_pairwise_isa[,7])
-          
-        # reduce all p-values to two decimal points
-          ambient_PM_art_pairwise_isa[] <- lapply(ambient_PM_art_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-          ambient_PM_art_pairwise_isa
-          
-        # write the data frame to a csv
-          write.csv(ambient_PM_art_pairwise_isa, file.path(stats_dir,"ambient_PM_art_pairwise_isa.csv"), row.names = TRUE)
+    letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+    letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+    
+    # Fill pairwise matrices (15 comparisons + 6 letters for ambient)
+    ambient_PM_art_pairwise_dist[i, 2:16]  <- pw_dist$p.value[1:15]
+    ambient_PM_art_pairwise_dist[i, 17:22] <- letters_dist$Letter[1:6]
+    
+    ambient_PM_art_pairwise_isa[i, 2:16]  <- pw_isa$p.value[1:15]
+    ambient_PM_art_pairwise_isa[i, 17:22] <- letters_isa$Letter[1:6]
+    
+  }, error = function(e) {
+    message("Failed for element: ", element, " — ", e$message)
+  })
+}
+
+# Post-processing — reusing the same finalize_matrix function from the foliar section
+ambient_PM_art_pvals <- finalize_matrix(
+  ambient_PM_art_pvals, 2:6,
+  file.path(stats_dir, "ambient_PM_art_pvals.csv"))
+
+ambient_PM_art_pairwise_dist <- finalize_matrix(
+  ambient_PM_art_pairwise_dist, 2:16,
+  file.path(stats_dir, "ambient_PM_art_pairwise_dist.csv"))
+
+ambient_PM_art_pairwise_isa <- finalize_matrix(
+  ambient_PM_art_pairwise_isa, 2:16,
+  file.path(stats_dir, "ambient_PM_art_pairwise_isa.csv"))   
     
 ```
+
 ##### ART ANOVA (NO open sites for ambient)
 ```{r}
-# Foliar
-    
-    # create an empty matrix, with a row for each element and a column each for: p-value on edge vs. interior, p-value for urban vs rural (by dist), p-value for interaction term (by dist), p-value for urban vs rural (by %ISA), p-value for interaction term (by %ISA)
-    
-        foliar_PM_art_NOopen_pvals <- matrix(data=NA, nrow=26, ncol=6)
-        colnames(foliar_PM_art_NOopen_pvals) <- c("Element","Edge_vs_Interior","Urb_v_Rural_Dist","Interaction_Dist","Urb_v_Rural_ISA","Interaction_ISA" )
-        foliar_PM_art_NOopen_pvals[,1] <- all_element_names
-        
-    # create an empty matrix, with a row for each element and a column for each pairwise comparison
-        
-        foliar_PM_art_NOopen_pairwise_dist <- matrix(data=NA, nrow=26, ncol=11)
-        foliar_PM_art_NOopen_pairwise_dist[,1] <- all_element_names
-        colnames(foliar_PM_art_NOopen_pairwise_dist) <- 
-          c("Element",
-            "Rural,0 - Rural,90",
-            "Rural,0 - Urban,0",
-            "Rural,0 - Urban,90",
-            "Rural,90 - Urban,0",
-            "Rural,90 - Urban,90",
-            "Urban,0 - Urban,90",
-            "Rural0",
-            "Rural90",
-            "Urban0",
-            "Urban90"
-            )
-        
-        foliar_PM_art_NOopen_pairwise_isa <- matrix(data=NA, nrow=26, ncol=11)
-        foliar_PM_art_NOopen_pairwise_isa[,1] <- all_element_names
-        colnames(foliar_PM_art_NOopen_pairwise_isa) <- 
-          c("Element",
-            "Rural,0 - Rural,90",
-            "Rural,0 - Urban,0",
-            "Rural,0 - Urban,90",
-            "Rural,90 - Urban,0",
-            "Rural,90 - Urban,90",
-            "Urban,0 - Urban,90",
-            "Rural0",
-            "Rural90",
-            "Urban0",
-            "Urban90"
-            )
-        
-    # now the matrices are ready to go, and we can fill it with these p-values using the loop below
-    
-    for (i in c(1:26)) {
-      
-    element <- all_element_names[i]
-    no.nas <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites[, element]), ]
-    
 
-    
-    # ART Anova
+   # === FOLIAR ===
         
-      # Edge vs. Interior
-      formula <- as.formula(paste(all_element_names[i], "~ dfe"))
-      X_ART_EvI <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-      X_aovART_EvI <- anova(X_ART_EvI)
-      X_aovART_EvI_pval <- X_aovART_EvI["dfe","Pr(>F)"] # this extracts the p-value for edge vs. interior
-      foliar_PM_art_NOopen_pvals[i,2] <- X_aovART_EvI_pval # this places it into the matrix we made
-      
-      # Urban vs. Rural
-        # dist
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_dist"))
-        X_ART_dist <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_dist <- anova(X_ART_dist)
-        U_R_art_dist_pval <- X_aovART_dist["urb_cat_dist","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        foliar_PM_art_NOopen_pvals[i,3] <- U_R_art_dist_pval # this places it into the matrix we made
+        # Initialize matrices
+        foliar_PM_art_pvals <- matrix(data = NA, nrow = 26, ncol = 6)
+        colnames(foliar_PM_art_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                            "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA")
+        foliar_PM_art_pvals[, 1] <- all_element_names
         
-        # isa
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_isa"))
-        X_ART_isa <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_isa <- anova(X_ART_isa)
-        U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        foliar_PM_art_NOopen_pvals[i,5] <- U_R_art_isa_pval # this places it into the matrix we made
-      
-      # Urban vs. Rural and Interaction Term
-        # dist
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_dist*dfe"))
-        X_ART_dist <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_dist <- anova(X_ART_dist)
-        Int_art_dist_pval <- X_aovART_dist["urb_cat_dist:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-        foliar_PM_art_NOopen_pvals[i,4] <- Int_art_dist_pval # this places it into the matrix we made
+        pairwise_cols <- c("Element", "Rural,0 - Rural,90", "Rural,0 - Urban,0",
+                           "Rural,0 - Urban,90", "Rural,90 - Urban,0", "Rural,90 - Urban,90",
+                           "Urban,0 - Urban,90", "Rural0", "Rural90", "Urban0", "Urban90")
+        
+        foliar_PM_art_pairwise_dist <- matrix(data = NA, nrow = 26, ncol = 11,
+                                               dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_pairwise_dist[, 1] <- all_element_names
+        
+        foliar_PM_art_pairwise_isa <- matrix(data = NA, nrow = 26, ncol = 11,
+                                              dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_pairwise_isa[, 1] <- all_element_names
+        
+        # Loop
+        for (i in 1:26) {
+          element <- all_element_names[i]
+          
+          # Clean data for this element
+          dat <- FoliarPMCompxUNESites[complete.cases(FoliarPMCompxUNESites[, element]), ]
+          
+          # Skip if all NA
+          if (nrow(dat) == 0) next
+          
+          tryCatch({
+            
+            # Fit 5 models
+            fit_dfe      <- art(as.formula(paste(element, "~ dfe")), data = dat)
+            fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist")), data = dat)
+            fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa")), data = dat)
+            fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe")), data = dat)
+            fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe")), data = dat)
+            
+            # ANOVA summaries
+            aov_dfe      <- anova(fit_dfe)
+            aov_dist     <- anova(fit_dist)
+            aov_isa      <- anova(fit_isa)
+            aov_int_dist <- anova(fit_int_dist)
+            aov_int_isa  <- anova(fit_int_isa)
+            
+            # Extract p-values
+            foliar_PM_art_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+            foliar_PM_art_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+            
+            # Pairwise comparisons — run on interaction models
+            pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+            pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+            
+            letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+            letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+            
+            # Fill pairwise matrices
+            foliar_PM_art_pairwise_dist[i, 2:7]  <- pw_dist$p.value[1:6]
+            foliar_PM_art_pairwise_dist[i, 8:11] <- letters_dist$Letter[1:4]
+            
+            foliar_PM_art_pairwise_isa[i, 2:7]  <- pw_isa$p.value[1:6]
+            foliar_PM_art_pairwise_isa[i, 8:11] <- letters_isa$Letter[1:4]
+            
+          }, error = function(e) {
+            message("Failed for element: ", element, " — ", e$message)
+          })
+        }
+        
+        # Post-processing helper function
+        finalize_matrix <- function(mat, numeric_cols, filepath) {
+          df <- as.data.frame(mat)
+          df[, numeric_cols] <- lapply(df[, numeric_cols], as.numeric)
+          df[] <- lapply(df, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+          write.csv(df, filepath, row.names = TRUE)
+          df
+        }
+        
+        foliar_PM_art_pvals <- finalize_matrix(
+          foliar_PM_art_pvals, 2:6,
+          file.path(stats_dir, "foliar_PM_art_pvals.csv"))
+        
+        foliar_PM_art_pairwise_dist <- finalize_matrix(
+          foliar_PM_art_pairwise_dist, 2:7,
+          file.path(stats_dir, "foliar_PM_art_pairwise_dist.csv"))
+        
+        foliar_PM_art_pairwise_isa <- finalize_matrix(
+          foliar_PM_art_pairwise_isa, 2:7,
+          file.path(stats_dir, "foliar_PM_art_pairwise_isa.csv"))
 
-        # isa
-        formula <- as.formula(paste(all_element_names[i], "~urb_cat_isa*dfe"))
-        X_ART_isa <- art(formula, data = FoliarPMCompxUNESites[!is.na(FoliarPMCompxUNESites[[element]]),])
-        X_aovART_isa <- anova(X_ART_isa)
-        U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-        Int_art_isa_pval <- X_aovART_isa["urb_cat_isa:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-        foliar_PM_art_NOopen_pvals[i,6] <- Int_art_isa_pval # this places it into the matrix we made
-    
-    
-    # pairwise comparisons
-    
-      # isa
-      art.con_X_ART_isa <- art.con(X_ART_isa,~urb_cat_isa*dfe, adjust="none")
-      art.con_X_ART_isa <- as.data.frame(art.con_X_ART_isa)
-      letters_isa <- cldList(
-      p.value ~ contrast,
-      data = art.con_X_ART_isa,
-      threshold = 0.05  
-    )
-        # placing these results into our matrix
-      
-          # pairwise comparisons
-          foliar_PM_art_NOopen_pairwise_isa[i,2] <- art.con_X_ART_isa$p.value[1]
-          foliar_PM_art_NOopen_pairwise_isa[i,3] <- art.con_X_ART_isa$p.value[2]
-          foliar_PM_art_NOopen_pairwise_isa[i,4] <- art.con_X_ART_isa$p.value[3]
-          foliar_PM_art_NOopen_pairwise_isa[i,5] <- art.con_X_ART_isa$p.value[4]
-          foliar_PM_art_NOopen_pairwise_isa[i,6] <- art.con_X_ART_isa$p.value[5]
-          foliar_PM_art_NOopen_pairwise_isa[i,7] <- art.con_X_ART_isa$p.value[6]
+# === AMBIENT ===
+        
+        AmbientPMCompxUNESites_NOopen <- subset(AmbientPMCompxUNESites, dfe=="0"|dfe=="90")
+
+        # Initialize matrices
+        ambient_PM_art_pvals <- matrix(data = NA, nrow = 26, ncol = 6)
+        colnames(ambient_PM_art_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                            "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA")
+        ambient_PM_art_pvals[, 1] <- all_element_names
+        
+        pairwise_cols <- c("Element", "Rural,0 - Rural,90", "Rural,0 - Urban,0",
+                           "Rural,0 - Urban,90", "Rural,90 - Urban,0", "Rural,90 - Urban,90",
+                           "Urban,0 - Urban,90", "Rural0", "Rural90", "Urban0", "Urban90")
+        
+        ambient_PM_art_pairwise_dist <- matrix(data = NA, nrow = 26, ncol = 11,
+                                               dimnames = list(NULL, pairwise_cols))
+        ambient_PM_art_pairwise_dist[, 1] <- all_element_names
+        
+        ambient_PM_art_pairwise_isa <- matrix(data = NA, nrow = 26, ncol = 11,
+                                              dimnames = list(NULL, pairwise_cols))
+        ambient_PM_art_pairwise_isa[, 1] <- all_element_names
+        
+        # Loop
+        for (i in 1:26) {
+          element <- all_element_names[i]
           
-          # letters
-          foliar_PM_art_NOopen_pairwise_isa[i,8] <- letters_isa$Letter[1]
-          foliar_PM_art_NOopen_pairwise_isa[i,9] <- letters_isa$Letter[2]
-          foliar_PM_art_NOopen_pairwise_isa[i,10] <- letters_isa$Letter[3]
-          foliar_PM_art_NOopen_pairwise_isa[i,11] <- letters_isa$Letter[4]
+          # Clean data for this element
+          dat <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites_NOopen[, element]), ]
           
-    
-      # dist
-      art.con_X_ART_dist <- art.con(X_ART_dist,~urb_cat_dist*dfe, adjust="none")
-      art.con_X_ART_dist <- as.data.frame(art.con_X_ART_dist)
-      letters_dist <- cldList(
-      p.value ~ contrast,
-      data = art.con_X_ART_dist,
-      threshold = 0.05
-      )
-      
-        # placing these results into our matrix
-      
-          # pairwise comparisons
-          foliar_PM_art_NOopen_pairwise_dist[i,2] <- art.con_X_ART_dist$p.value[1]
-          foliar_PM_art_NOopen_pairwise_dist[i,3] <- art.con_X_ART_dist$p.value[2]
-          foliar_PM_art_NOopen_pairwise_dist[i,4] <- art.con_X_ART_dist$p.value[3]
-          foliar_PM_art_NOopen_pairwise_dist[i,5] <- art.con_X_ART_dist$p.value[4]
-          foliar_PM_art_NOopen_pairwise_dist[i,6] <- art.con_X_ART_dist$p.value[5]
-          foliar_PM_art_NOopen_pairwise_dist[i,7] <- art.con_X_ART_dist$p.value[6]
+          # Skip if all NA
+          if (nrow(dat) == 0) next
           
-          # letters
-          foliar_PM_art_NOopen_pairwise_dist[i,8] <- letters_dist$Letter[1]
-          foliar_PM_art_NOopen_pairwise_dist[i,9] <- letters_dist$Letter[2]
-          foliar_PM_art_NOopen_pairwise_dist[i,10] <- letters_dist$Letter[3]
-          foliar_PM_art_NOopen_pairwise_dist[i,11] <- letters_dist$Letter[4]
-    }
-        # this is the matrix with p-values! now we make it into a data frame 
-        foliar_PM_art_NOopen_pvals <- as.data.frame(foliar_PM_art_NOopen_pvals)
-        
-        # make sure all the numbers are classified as "numeric"
-        foliar_PM_art_NOopen_pvals$Edge_vs_Interior <- as.numeric(foliar_PM_art_NOopen_pvals$Edge_vs_Interior)
-        foliar_PM_art_NOopen_pvals$Urb_v_Rural_Dist <- as.numeric(foliar_PM_art_NOopen_pvals$Urb_v_Rural_Dist)
-        foliar_PM_art_NOopen_pvals$Interaction_Dist <- as.numeric(foliar_PM_art_NOopen_pvals$Interaction_Dist)
-        foliar_PM_art_NOopen_pvals$Urb_v_Rural_ISA <- as.numeric(foliar_PM_art_NOopen_pvals$Urb_v_Rural_ISA)
-        foliar_PM_art_NOopen_pvals$Interaction_ISA <- as.numeric(foliar_PM_art_NOopen_pvals$Interaction_ISA)
-        
-        # reduce all p-values in the matrix to two decimal points
-        foliar_PM_art_NOopen_pvals[] <- lapply(foliar_PM_art_NOopen_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-        
-        # this is the matrix with p-values! now we make it into a data frame 
-        foliar_PM_art_NOopen_pvals <- as.data.frame(foliar_PM_art_NOopen_pvals)
-        
-        # write the data frame to a csv
-        write.csv(foliar_PM_art_NOopen_pvals, file.path(stats_dir,"foliar_PM_art_NOopen_pvals.csv"), row.names = TRUE)
-        
-    # the other matrices store pairwise comparisons & letters to indicate significance
-        
-        # dist
-          foliar_PM_art_NOopen_pairwise_dist <- as.data.frame(foliar_PM_art_NOopen_pairwise_dist)
-        
-          # making sure everything is numeric
-            foliar_PM_art_NOopen_pairwise_dist[,2] <- as.numeric(foliar_PM_art_NOopen_pairwise_dist[,2])
-            foliar_PM_art_NOopen_pairwise_dist[,3] <- as.numeric(foliar_PM_art_NOopen_pairwise_dist[,3])
-            foliar_PM_art_NOopen_pairwise_dist[,4] <- as.numeric(foliar_PM_art_NOopen_pairwise_dist[,4])
-            foliar_PM_art_NOopen_pairwise_dist[,5] <- as.numeric(foliar_PM_art_NOopen_pairwise_dist[,5])
-            foliar_PM_art_NOopen_pairwise_dist[,6] <- as.numeric(foliar_PM_art_NOopen_pairwise_dist[,6])
-            foliar_PM_art_NOopen_pairwise_dist[,7] <- as.numeric(foliar_PM_art_NOopen_pairwise_dist[,7])
+          tryCatch({
             
-          # reduce all p-values to two decimal points
-            foliar_PM_art_NOopen_pairwise_dist[] <- lapply(foliar_PM_art_NOopen_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
+            # Fit 5 models
+            fit_dfe      <- art(as.formula(paste(element, "~ dfe")), data = dat)
+            fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist")), data = dat)
+            fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa")), data = dat)
+            fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe")), data = dat)
+            fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe")), data = dat)
             
-          # write the data frame to a csv
-            write.csv(foliar_PM_art_NOopen_pairwise_dist, file.path(stats_dir,"foliar_PM_art_NOopen_pairwise_dist.csv"), row.names = TRUE)
+            # ANOVA summaries
+            aov_dfe      <- anova(fit_dfe)
+            aov_dist     <- anova(fit_dist)
+            aov_isa      <- anova(fit_isa)
+            aov_int_dist <- anova(fit_int_dist)
+            aov_int_isa  <- anova(fit_int_isa)
+            
+            # Extract p-values
+            ambient_PM_art_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+            ambient_PM_art_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+            ambient_PM_art_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+            ambient_PM_art_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+            ambient_PM_art_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+            
+            # Pairwise comparisons — run on interaction models
+            pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+            pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+            
+            letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+            letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+            
+            # Fill pairwise matrices
+            ambient_PM_art_pairwise_dist[i, 2:7]  <- pw_dist$p.value[1:6]
+            ambient_PM_art_pairwise_dist[i, 8:11] <- letters_dist$Letter[1:4]
+            
+            ambient_PM_art_pairwise_isa[i, 2:7]  <- pw_isa$p.value[1:6]
+            ambient_PM_art_pairwise_isa[i, 8:11] <- letters_isa$Letter[1:4]
+            
+          }, error = function(e) {
+            message("Failed for element: ", element, " — ", e$message)
+          })
+        }
         
-        # isa
-          foliar_PM_art_NOopen_pairwise_isa <- as.data.frame(foliar_PM_art_NOopen_pairwise_isa)
-          foliar_PM_art_NOopen_pairwise_isa <- as.data.frame(foliar_PM_art_NOopen_pairwise_isa)
+        # Post-processing helper function
+        finalize_matrix <- function(mat, numeric_cols, filepath) {
+          df <- as.data.frame(mat)
+          df[, numeric_cols] <- lapply(df[, numeric_cols], as.numeric)
+          df[] <- lapply(df, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+          write.csv(df, filepath, row.names = TRUE)
+          df
+        }
         
-          # making sure everything is numeric
-            foliar_PM_art_NOopen_pairwise_isa[,2] <- as.numeric(foliar_PM_art_NOopen_pairwise_isa[,2])
-            foliar_PM_art_NOopen_pairwise_isa[,3] <- as.numeric(foliar_PM_art_NOopen_pairwise_isa[,3])
-            foliar_PM_art_NOopen_pairwise_isa[,4] <- as.numeric(foliar_PM_art_NOopen_pairwise_isa[,4])
-            foliar_PM_art_NOopen_pairwise_isa[,5] <- as.numeric(foliar_PM_art_NOopen_pairwise_isa[,5])
-            foliar_PM_art_NOopen_pairwise_isa[,6] <- as.numeric(foliar_PM_art_NOopen_pairwise_isa[,6])
-            foliar_PM_art_NOopen_pairwise_isa[,7] <- as.numeric(foliar_PM_art_NOopen_pairwise_isa[,7])
-            
-          # reduce all p-values to two decimal points
-            foliar_PM_art_NOopen_pairwise_isa[] <- lapply(foliar_PM_art_NOopen_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-            
-          # write the data frame to a csv
-            write.csv(foliar_PM_art_NOopen_pairwise_isa, file.path(stats_dir,"foliar_PM_art_NOopen_pairwise_isa.csv"), row.names = TRUE)
-            
-            
-# Ambient
-            
-  # subsetting just the edge & interior sites
-  AllCompxUNESites_NOopen <- subset(AllCompxUNESites, dfe=="0"|dfe=="90")
-  
-  # create an empty matrix, with a row for each response variable and a column each for: p-value on dfe, p-value for urban vs rural (by dist), p-value for interaction term (by dist), p-value for urban vs rural (by %ISA), p-value for interaction term (by %ISA)
-  
-      ambient_PM_art_NOopen_pvals <- matrix(data=NA, nrow=26, ncol=6)
-      colnames(ambient_PM_art_NOopen_pvals) <- c("Element","Edge_vs_Interior","Urb_v_Rural_Dist","Interaction_Dist","Urb_v_Rural_ISA","Interaction_ISA" )
-      ambient_PM_art_NOopen_pvals[,1] <- all_element_names
-  
-  
-  # create an empty matrix, with a row for each element and a column for each pairwise comparison
-      
-      ambient_PM_art_NOopen_pairwise_dist <- matrix(data=NA, nrow=26, ncol=11)
-      ambient_PM_art_NOopen_pairwise_dist[,1] <- all_element_names
-      colnames(ambient_PM_art_NOopen_pairwise_dist) <- 
-          c("Element",
-            "Rural,0 - Rural,90",
-            "Rural,0 - Urban,0",
-            "Rural,0 - Urban,90",
-            "Rural,90 - Urban,0",
-            "Rural,90 - Urban,90",
-            "Urban,0 - Urban,90",
-            "Rural0",
-            "Rural90",
-            "Urban0",
-            "Urban90"
-            )
-      
-      ambient_PM_art_NOopen_pairwise_isa <- matrix(data=NA, nrow=26, ncol=11)
-      ambient_PM_art_NOopen_pairwise_isa[,1] <- all_element_names
-      colnames(ambient_PM_art_NOopen_pairwise_isa) <- 
-          c("Element",
-            "Rural,0 - Rural,90",
-            "Rural,0 - Urban,0",
-            "Rural,0 - Urban,90",
-            "Rural,90 - Urban,0",
-            "Rural,90 - Urban,90",
-            "Urban,0 - Urban,90",
-            "Rural0",
-            "Rural90",
-            "Urban0",
-            "Urban90"
-            )
-      
-  # now the matrices are ready to go, and we can fill it with these p-values using the loop below
-  
-  library(ARTool)
-  
-  for (i in c(1:26)) {
-  
-  element <- all_element_names[i]
-  
-  no.nas <- AllCompxUNESites_NOopen[complete.cases(AllCompxUNESites_NOopen[, element]), ]
-  
-  # ART Anova
-      
-    # Edge vs. Interior
-    formula <- as.formula(paste(all_element_names[i], "~ dfe"))
-    X_ART_EvI <- art(formula, data = no.nas)
-    X_aovART_EvI <- anova(X_ART_EvI)
-    X_aovART_EvI_pval <- X_aovART_EvI["dfe","Pr(>F)"] # this extracts the p-value for edge vs. interior
-    ambient_PM_art_NOopen_pvals[i,2] <- X_aovART_EvI_pval # this places it into the matrix we made
-    
-    # Urban vs Rural
-      # dist
-      formula <- as.formula(paste(all_element_names[i], "~urb_cat_dist"))
-      X_ART_dist <- art(formula, data = no.nas)
-      X_aovART_dist <- anova(X_ART_dist)
-      U_R_art_dist_pval <- X_aovART_dist["urb_cat_dist","Pr(>F)"] # this extracts the p-value for urban vs. rural
-      ambient_PM_art_NOopen_pvals[i,3] <- U_R_art_dist_pval # this places it into the matrix we made
-      
-      # isa
-      formula <- as.formula(paste(all_element_names[i], "~urb_cat_isa"))
-      X_ART_isa <- art(formula, data = no.nas)
-      X_aovART_isa <- anova(X_ART_isa)
-      U_R_art_isa_pval <- X_aovART_isa["urb_cat_isa","Pr(>F)"] # this extracts the p-value for urban vs. rural
-      ambient_PM_art_NOopen_pvals[i,5] <- U_R_art_isa_pval # this places it into the matrix we made
-      
-    # Urban vs. Rural and Interaction Term
-      # dist
-      formula <- as.formula(paste(all_element_names[i], "~urb_cat_dist*dfe"))
-      X_ART_dist <- art(formula, data = no.nas)
-      X_aovART_dist <- anova(X_ART_dist)
-      Int_art_dist_pval <- X_aovART_dist["urb_cat_dist:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-      ambient_PM_art_NOopen_pvals[i,4] <- Int_art_dist_pval # this places it into the matrix we made
-    
-    # Urban vs. Rural and Interaction Term (by %ISA)
-      # isa
-      formula <- as.formula(paste(all_element_names[i], "~urb_cat_isa*dfe"))
-      X_ART_isa <- art(formula, data = no.nas)
-      X_aovART_isa <- anova(X_ART_isa)
-      Int_art_isa_pval <- X_aovART_isa["urb_cat_isa:dfe","Pr(>F)"] # this extracts the p-value for the interaction term
-      ambient_PM_art_NOopen_pvals[i,6] <- Int_art_isa_pval # this places it into the matrix we made
-  
-  # pairwise comparisons
-  
-    # isa
-    art.con_X_ART_isa <- art.con(X_ART_isa,~urb_cat_isa*dfe, adjust="none")
-    art.con_X_ART_isa <- as.data.frame(art.con_X_ART_isa)
-    letters_isa <- cldList(
-    p.value ~ contrast,
-    data = art.con_X_ART_isa,
-    threshold = 0.05  
-  )
-      # placing these results into our matrix
-    
-        # pairwise comparisons
-        #ambient_PM_art_NOopen_pairwise_isa[i,2] <- art.con_X_ART_isa$p.value[1]
-        #ambient_PM_art_NOopen_pairwise_isa[i,3] <- art.con_X_ART_isa$p.value[2]
-        #ambient_PM_art_NOopen_pairwise_isa[i,4] <- art.con_X_ART_isa$p.value[3]
-        #ambient_PM_art_NOopen_pairwise_isa[i,5] <- art.con_X_ART_isa$p.value[4]
-        #ambient_PM_art_NOopen_pairwise_isa[i,6] <- art.con_X_ART_isa$p.value[5]
-        #ambient_PM_art_NOopen_pairwise_isa[i,7] <- art.con_X_ART_isa$p.value[6]
-        #ambient_PM_art_NOopen_pairwise_isa[i,8] <- art.con_X_ART_isa$p.value[7]
-        #ambient_PM_art_NOopen_pairwise_isa[i,9] <- art.con_X_ART_isa$p.value[8]
-        #ambient_PM_art_NOopen_pairwise_isa[i,10] <- art.con_X_ART_isa$p.value[9]
-        #ambient_PM_art_NOopen_pairwise_isa[i,11] <- art.con_X_ART_isa$p.value[10]
-        #ambient_PM_art_NOopen_pairwise_isa[i,12] <- art.con_X_ART_isa$p.value[11]
-        #ambient_PM_art_NOopen_pairwise_isa[i,13] <- art.con_X_ART_isa$p.value[12]
-        #ambient_PM_art_NOopen_pairwise_isa[i,14] <- art.con_X_ART_isa$p.value[13]
-        #ambient_PM_art_NOopen_pairwise_isa[i,15] <- art.con_X_ART_isa$p.value[14]
-        #ambient_PM_art_NOopen_pairwise_isa[i,16] <- art.con_X_ART_isa$p.value[15]
+        ambient_PM_art_pvals <- finalize_matrix(
+          ambient_PM_art_pvals, 2:6,
+          file.path(stats_dir, "ambient_PM_art_pvals.csv"))
         
-        # letters
-        #ambient_PM_art_NOopen_pairwise_isa[i,17] <- letters_isa$Letter[1]
-        #ambient_PM_art_NOopen_pairwise_isa[i,18] <- letters_isa$Letter[2]
-        #ambient_PM_art_NOopen_pairwise_isa[i,19] <- letters_isa$Letter[3]
-        #ambient_PM_art_NOopen_pairwise_isa[i,20] <- letters_isa$Letter[4]
-        #ambient_PM_art_NOopen_pairwise_isa[i,21] <- letters_isa$Letter[5]
-       # ambient_PM_art_NOopen_pairwise_isa[i,22] <- letters_isa$Letter[6]
+        ambient_PM_art_pairwise_dist <- finalize_matrix(
+          ambient_PM_art_pairwise_dist, 2:7,
+          file.path(stats_dir, "ambient_PM_art_pairwise_dist.csv"))
         
-  
-    # dist
-    art.con_X_ART_dist <- art.con(X_ART_dist,~urb_cat_dist*dfe, adjust="none")
-    art.con_X_ART_dist <- as.data.frame(art.con_X_ART_dist)
-    letters_dist <- cldList(
-    p.value ~ contrast,
-    data = art.con_X_ART_dist,
-    threshold = 0.05
-    )
-    
-      # placing these results into our matrix
-    
-        # pairwise comparisons
-        #ambient_PM_art_NOopen_pairwise_dist[i,2] <- art.con_X_ART_dist$p.value[1]
-        #ambient_PM_art_NOopen_pairwise_dist[i,3] <- art.con_X_ART_dist$p.value[2]
-        #ambient_PM_art_NOopen_pairwise_dist[i,4] <- art.con_X_ART_dist$p.value[3]
-        #ambient_PM_art_NOopen_pairwise_dist[i,5] <- art.con_X_ART_dist$p.value[4]
-        #ambient_PM_art_NOopen_pairwise_dist[i,6] <- art.con_X_ART_dist$p.value[5]
-        #ambient_PM_art_NOopen_pairwise_dist[i,7] <- art.con_X_ART_dist$p.value[6]
-        #ambient_PM_art_NOopen_pairwise_dist[i,8] <- art.con_X_ART_dist$p.value[7]
-        #ambient_PM_art_NOopen_pairwise_dist[i,9] <- art.con_X_ART_dist$p.value[8]
-        #ambient_PM_art_NOopen_pairwise_dist[i,10] <- art.con_X_ART_dist$p.value[9]
-        #ambient_PM_art_NOopen_pairwise_dist[i,11] <- art.con_X_ART_dist$p.value[10]
-        #ambient_PM_art_NOopen_pairwise_dist[i,12] <- art.con_X_ART_dist$p.value[11]
-        #ambient_PM_art_NOopen_pairwise_dist[i,13] <- art.con_X_ART_dist$p.value[12]
-        #ambient_PM_art_NOopen_pairwise_dist[i,14] <- art.con_X_ART_dist$p.value[13]
-        #ambient_PM_art_NOopen_pairwise_dist[i,15] <- art.con_X_ART_dist$p.value[14]
-        #ambient_PM_art_NOopen_pairwise_dist[i,16] <- art.con_X_ART_dist$p.value[15]
-        
-        # letters
-        #ambient_PM_art_NOopen_pairwise_dist[i,17] <- letters_dist$Letter[1]
-        #ambient_PM_art_NOopen_pairwise_dist[i,18] <- letters_dist$Letter[2]
-        #ambient_PM_art_NOopen_pairwise_dist[i,19] <- letters_dist$Letter[3]
-        #ambient_PM_art_NOopen_pairwise_dist[i,20] <- letters_dist$Letter[4]
-        #ambient_PM_art_NOopen_pairwise_dist[i,21] <- letters_dist$Letter[5]
-        #ambient_PM_art_NOopen_pairwise_dist[i,22] <- letters_dist$Letter[6]
-  
-  }
-  
-  # this is the matrix with p-values! now we make it into a data frame 
-      ambient_PM_art_NOopen_pvals <- as.data.frame(ambient_PM_art_NOopen_pvals)
-      
-      # make sure all the numbers are classified as "numeric"
-      ambient_PM_art_NOopen_pvals$Edge_vs_Interior <- as.numeric(ambient_PM_art_NOopen_pvals$Edge_vs_Interior)
-      ambient_PM_art_NOopen_pvals$Urb_v_Rural_Dist <- as.numeric(ambient_PM_art_NOopen_pvals$Urb_v_Rural_Dist)
-      ambient_PM_art_NOopen_pvals$Interaction_Dist <- as.numeric(ambient_PM_art_NOopen_pvals$Interaction_Dist)
-      ambient_PM_art_NOopen_pvals$Urb_v_Rural_ISA <- as.numeric(ambient_PM_art_NOopen_pvals$Urb_v_Rural_ISA)
-      ambient_PM_art_NOopen_pvals$Interaction_ISA <- as.numeric(ambient_PM_art_NOopen_pvals$Interaction_ISA)
-      
-      # reduce all p-values in the matrix to two decimal points
-      ambient_PM_art_NOopen_pvals[] <- lapply(ambient_PM_art_NOopen_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-      
-      # write the data frame to a csv
-      write.csv(ambient_PM_art_NOopen_pvals, file.path(stats_dir,"ambient_PM_art_NOopen_pvals.csv"), row.names = TRUE)
-      
-  # the other matrices store pairwise comparisons & letters to indicate significance
-      
-      # dist
-        ambient_PM_art_NOopen_pairwise_dist <- as.data.frame(ambient_PM_art_NOopen_pairwise_dist)
-      
-        # making sure everything is numeric
-          ambient_PM_art_NOopen_pairwise_dist[,2] <- as.numeric(ambient_PM_art_NOopen_pairwise_dist[,2])
-          ambient_PM_art_NOopen_pairwise_dist[,3] <- as.numeric(ambient_PM_art_NOopen_pairwise_dist[,3])
-          ambient_PM_art_NOopen_pairwise_dist[,4] <- as.numeric(ambient_PM_art_NOopen_pairwise_dist[,4])
-          ambient_PM_art_NOopen_pairwise_dist[,5] <- as.numeric(ambient_PM_art_NOopen_pairwise_dist[,5])
-          ambient_PM_art_NOopen_pairwise_dist[,6] <- as.numeric(ambient_PM_art_NOopen_pairwise_dist[,6])
-          ambient_PM_art_NOopen_pairwise_dist[,7] <- as.numeric(ambient_PM_art_NOopen_pairwise_dist[,7])
-          
-        # reduce all p-values to two decimal points
-          ambient_PM_art_NOopen_pairwise_dist[] <- lapply(ambient_PM_art_NOopen_pairwise_dist, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-          
-        # write the data frame to a csv
-          write.csv(ambient_PM_art_NOopen_pairwise_dist, file.path(stats_dir,"ambient_PM_art_NOopen_pairwise_dist.csv"), row.names = TRUE)
-      
-      # isa
-        ambient_PM_art_NOopen_pairwise_isa <- as.data.frame(ambient_PM_art_NOopen_pairwise_isa)
-        ambient_PM_art_NOopen_pairwise_isa <- as.data.frame(ambient_PM_art_NOopen_pairwise_isa)
-      
-        # making sure everything is numeric
-          ambient_PM_art_NOopen_pairwise_isa[,2] <- as.numeric(ambient_PM_art_NOopen_pairwise_isa[,2])
-          ambient_PM_art_NOopen_pairwise_isa[,3] <- as.numeric(ambient_PM_art_NOopen_pairwise_isa[,3])
-          ambient_PM_art_NOopen_pairwise_isa[,4] <- as.numeric(ambient_PM_art_NOopen_pairwise_isa[,4])
-          ambient_PM_art_NOopen_pairwise_isa[,5] <- as.numeric(ambient_PM_art_NOopen_pairwise_isa[,5])
-          ambient_PM_art_NOopen_pairwise_isa[,6] <- as.numeric(ambient_PM_art_NOopen_pairwise_isa[,6])
-          ambient_PM_art_NOopen_pairwise_isa[,7] <- as.numeric(ambient_PM_art_NOopen_pairwise_isa[,7])
-          
-        # reduce all p-values to two decimal points
-          ambient_PM_art_NOopen_pairwise_isa[] <- lapply(ambient_PM_art_NOopen_pairwise_isa, function(x) if (is.numeric(x)) signif(x, digits = 2) else x) 
-          ambient_PM_art_NOopen_pairwise_isa
-          
-        # write the data frame to a csv
-          write.csv(ambient_PM_art_NOopen_pairwise_isa, file.path(stats_dir,"ambient_PM_art_NOopen_pairwise_isa.csv"), row.names = TRUE)
+        ambient_PM_art_pairwise_isa <- finalize_matrix(
+          ambient_PM_art_pairwise_isa, 2:7,
+          file.path(stats_dir, "ambient_PM_art_pairwise_isa.csv"))
     
 ```
+
 ##### Kruskal-Wallis Test (does not include open sites)
 ```{r}
 
@@ -1552,6 +1069,497 @@ for (i in c(1:26)) {
                 write.csv(ambient_PM_kw_pairwise_isa, file.path(stats_dir,"ambient_PM_kw_pairwise_isa.csv"), row.names = TRUE)
                 write.csv(ambient_PM_kw_pairwise_dist, file.path(stats_dir,"ambient_PM_kw_pairwise_dist.csv"), row.names = TRUE)
             
+```
+
+##### ART Nested
+###### Site as Random Effect
+```{r}
+    
+   # === FOLIAR ===
+        
+        # Initialize matrices
+        foliar_PM_art_nest1_pvals <- matrix(data = NA, nrow = 26, ncol = 7)
+        colnames(foliar_PM_art_nest1_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                                "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA",
+                                                "Singular_Fit")
+        foliar_PM_art_nest1_pvals[, 1] <- all_element_names
+        
+        pairwise_cols <- c("Element", "Rural,0 - Rural,90", "Rural,0 - Urban,0",
+                           "Rural,0 - Urban,90", "Rural,90 - Urban,0", "Rural,90 - Urban,90",
+                           "Urban,0 - Urban,90", "Rural0", "Rural90", "Urban0", "Urban90")
+        
+        foliar_PM_art_nest1_pairwise_dist <- matrix(data = NA, nrow = 26, ncol = 11,
+                                               dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_nest1_pairwise_dist[, 1] <- all_element_names
+        
+        foliar_PM_art_nest1_pairwise_isa <- matrix(data = NA, nrow = 26, ncol = 11,
+                                              dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_nest1_pairwise_isa[, 1] <- all_element_names
+        
+        # Loop
+          for (i in 1:26) {
+            element <- all_element_names[i]
+            
+            dat <- FoliarPMCompxUNESites[complete.cases(FoliarPMCompxUNESites[, element]), ]
+            
+            if (nrow(dat) == 0) next
+            
+            tryCatch({
+              
+              # Fit 5 models
+              fit_dfe      <- art(as.formula(paste(element, "~ dfe + (1 | UNE_site)")), data = dat)
+              fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist + (1 | UNE_site)")), data = dat)
+              fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa + (1 | UNE_site)")), data = dat)
+              fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe + (1 | UNE_site)")), data = dat)
+              fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe + (1 | UNE_site)")), data = dat)
+              
+              # Check singularity directly on underlying lmer models
+              singular_flag <- any(c(
+                isSingular(artlm(fit_dfe,      "dfe")),
+                isSingular(artlm(fit_dist,     "urb_cat_dist")),
+                isSingular(artlm(fit_isa,      "urb_cat_isa")),
+                isSingular(artlm(fit_int_dist, "urb_cat_dist:dfe")),
+                isSingular(artlm(fit_int_isa,  "urb_cat_isa:dfe"))
+              ))
+              
+              # ANOVA summaries
+              aov_dfe      <- anova(fit_dfe)
+              aov_dist     <- anova(fit_dist)
+              aov_isa      <- anova(fit_isa)
+              aov_int_dist <- anova(fit_int_dist)
+              aov_int_isa  <- anova(fit_int_isa)
+              
+              # Extract p-values
+              foliar_PM_art_nest1_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+              foliar_PM_art_nest1_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+              foliar_PM_art_nest1_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+              foliar_PM_art_nest1_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+              foliar_PM_art_nest1_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+              foliar_PM_art_nest1_pvals[i, 7] <- as.character(singular_flag)
+              
+              # Pairwise comparisons
+              pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+              pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+              
+              letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+              letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+              
+              foliar_PM_art_nest1_pairwise_dist[i, 2:7]  <- pw_dist$p.value[1:6]
+              foliar_PM_art_nest1_pairwise_dist[i, 8:11] <- letters_dist$Letter[1:4]
+              
+              foliar_PM_art_nest1_pairwise_isa[i, 2:7]  <- pw_isa$p.value[1:6]
+              foliar_PM_art_nest1_pairwise_isa[i, 8:11] <- letters_isa$Letter[1:4]
+              
+            }, error = function(e) {
+              message("Failed for element: ", element, " — ", e$message)
+            })
+          }        
+        
+        # Post-processing helper function
+        finalize_matrix <- function(mat, numeric_cols, filepath) {
+          df <- as.data.frame(mat)
+          df[, numeric_cols] <- lapply(df[, numeric_cols], as.numeric)
+          df[] <- lapply(df, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+          write.csv(df, filepath, row.names = TRUE)
+          df
+        }
+        
+        
+        foliar_PM_art_nest1_pvals <- finalize_matrix(
+          foliar_PM_art_nest1_pvals, 2:6,  # columns 2:6 only, not column 7
+          file.path(stats_dir, "foliar_PM_art_nest1_pvals.csv"))
+        
+        foliar_PM_art_nest1_pairwise_dist <- finalize_matrix(
+          foliar_PM_art_nest1_pairwise_dist, 2:7,
+          file.path(stats_dir, "foliar_PM_art_nest1_pairwise_dist.csv"))
+        
+        foliar_PM_art_nest1_pairwise_isa <- finalize_matrix(
+          foliar_PM_art_nest1_pairwise_isa, 2:7,
+          file.path(stats_dir, "foliar_PM_art_nest1_pairwise_isa.csv"))
+
+# === AMBIENT ===
+
+# Initialize matrices
+
+ambient_PM_art_nest1_pvals <- matrix(data = NA, nrow = 44, ncol = 7)
+colnames(ambient_PM_art_nest1_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                     "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA",
+                                     "Singular_Fit")
+
+ambient_PM_art_nest1_pvals[, 1] <- ambient_element_names
+
+pairwise_cols_ambient <- c("Element",
+                            "Rural,0 - Rural,90",
+                            "Rural,0 - Rural,Open",
+                            "Rural,0 - Urban,0",
+                            "Rural,0 - Urban,90",
+                            "Rural,0 - Urban,Open",
+                            "Rural,90 - Rural,Open",
+                            "Rural,90 - Urban,0",
+                            "Rural,90 - Urban,90",
+                            "Rural,90 - Urban,Open",
+                            "Rural,Open - Urban,0",
+                            "Rural,Open - Urban,90",
+                            "Rural,Open - Urban,Open",
+                            "Urban,0 - Urban,90",
+                            "Urban,0 - Urban,Open",
+                            "Urban,90 - Urban,Open",
+                            "Rural0", "Rural90", "RuralOpen",
+                            "Urban0", "Urban90", "UrbanOpen")
+
+ambient_PM_art_nest1_pairwise_dist <- matrix(data = NA, nrow = 44, ncol = 22,
+                                        dimnames = list(NULL, pairwise_cols_ambient))
+ambient_PM_art_nest1_pairwise_dist[, 1] <- ambient_element_names
+
+ambient_PM_art_nest1_pairwise_isa <- matrix(data = NA, nrow = 44, ncol = 22,
+                                       dimnames = list(NULL, pairwise_cols_ambient))
+ambient_PM_art_nest1_pairwise_isa[, 1] <- ambient_element_names
+
+# Loop
+
+for (i in 1:44) {
+  element <- ambient_element_names[i]
+  
+  dat <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites[, element]), ]
+  
+  if (nrow(dat) == 0) next
+  
+  tryCatch({
+    
+    # Fit 5 models
+    fit_dfe      <- art(as.formula(paste(element, "~ dfe + (1 | UNE_site)")), data = dat)
+    fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist + (1 | UNE_site)")), data = dat)
+    fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa + (1 | UNE_site)")), data = dat)
+    fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe + (1 | UNE_site)")), data = dat)
+    fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe + (1 | UNE_site)")), data = dat)
+    
+    # Check singularity directly on underlying lmer models
+    singular_flag <- any(c(
+      isSingular(artlm(fit_dfe,      "dfe")),
+      isSingular(artlm(fit_dist,     "urb_cat_dist")),
+      isSingular(artlm(fit_isa,      "urb_cat_isa")),
+      isSingular(artlm(fit_int_dist, "urb_cat_dist:dfe")),
+      isSingular(artlm(fit_int_isa,  "urb_cat_isa:dfe"))
+    ))
+    
+    # ANOVA summaries
+    aov_dfe      <- anova(fit_dfe)
+    aov_dist     <- anova(fit_dist)
+    aov_isa      <- anova(fit_isa)
+    aov_int_dist <- anova(fit_int_dist)
+    aov_int_isa  <- anova(fit_int_isa)
+    
+    # Extract p-values
+    ambient_PM_art_nest1_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+    ambient_PM_art_nest1_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+    ambient_PM_art_nest1_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+    ambient_PM_art_nest1_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+    ambient_PM_art_nest1_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+    ambient_PM_art_nest1_pvals[i, 7] <- as.character(singular_flag)
+    
+    # Pairwise comparisons
+    pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+    pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+    
+    letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+    letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+    
+    ambient_PM_art_nest1_pairwise_dist[i, 2:16]  <- pw_dist$p.value[1:15]
+    ambient_PM_art_nest1_pairwise_dist[i, 17:22] <- letters_dist$Letter[1:6]
+    
+    ambient_PM_art_nest1_pairwise_isa[i, 2:16]  <- pw_isa$p.value[1:15]
+    ambient_PM_art_nest1_pairwise_isa[i, 17:22] <- letters_isa$Letter[1:6]
+    
+  }, error = function(e) {
+    message("Failed for element: ", element, " — ", e$message)
+  })
+}     
+
+# Post-processing — reusing the same finalize_matrix function from the foliar section
+ambient_PM_art_nest1_pvals <- finalize_matrix(
+  ambient_PM_art_nest1_pvals, 2:6,  # only columns 2:6 get numeric conversion, not column 7
+  file.path(stats_dir, "ambient_PM_art_nest1_pvals.csv"))
+
+ambient_PM_art_nest1_pairwise_dist <- finalize_matrix(
+  ambient_PM_art_nest1_pairwise_dist, 2:16,
+  file.path(stats_dir, "ambient_PM_art_nest1_pairwise_dist.csv"))
+
+ambient_PM_art_nest1_pairwise_isa <- finalize_matrix(
+  ambient_PM_art_nest1_pairwise_isa, 2:16,
+  file.path(stats_dir, "ambient_PM_art_nest1_pairwise_isa.csv"))         
+
+```
+
+###### Tree/Sampler Nested Within Site as Random Effect
+```{r}
+    
+   # === FOLIAR ===
+        
+        # Initialize matrices
+        foliar_PM_art_nest2_pvals <- matrix(data = NA, nrow = 26, ncol = 7)
+        colnames(foliar_PM_art_nest2_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                                "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA",
+                                                "Singular_Fit")
+        foliar_PM_art_nest2_pvals[, 1] <- all_element_names
+        
+        pairwise_cols <- c("Element", "Rural,0 - Rural,90", "Rural,0 - Urban,0",
+                           "Rural,0 - Urban,90", "Rural,90 - Urban,0", "Rural,90 - Urban,90",
+                           "Urban,0 - Urban,90", "Rural0", "Rural90", "Urban0", "Urban90")
+        
+        foliar_PM_art_nest2_pairwise_dist <- matrix(data = NA, nrow = 26, ncol = 11,
+                                               dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_nest2_pairwise_dist[, 1] <- all_element_names
+        
+        foliar_PM_art_nest2_pairwise_isa <- matrix(data = NA, nrow = 26, ncol = 11,
+                                              dimnames = list(NULL, pairwise_cols))
+        foliar_PM_art_nest2_pairwise_isa[, 1] <- all_element_names
+        
+        # Loop
+          for (i in 1:26) {
+            element <- all_element_names[i]
+            
+            dat <- FoliarPMCompxUNESites[complete.cases(FoliarPMCompxUNESites[, element]), ]
+            
+            if (nrow(dat) == 0) next
+            
+            tryCatch({
+              
+              # Fit 5 models
+              fit_dfe      <- art(as.formula(paste(element, "~ dfe + (1 | UNE_site/replicate)")), data = dat)
+              fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist + (1 | UNE_site/replicate)")), data = dat)
+              fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa + (1 | UNE_site/replicate)")), data = dat)
+              fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe + (1 | UNE_site/replicate)")), data = dat)
+              fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe + (1 | UNE_site/replicate)")), data = dat)
+              
+              # Check singularity directly on underlying lmer models
+              singular_flag <- any(c(
+                isSingular(artlm(fit_dfe,      "dfe")),
+                isSingular(artlm(fit_dist,     "urb_cat_dist")),
+                isSingular(artlm(fit_isa,      "urb_cat_isa")),
+                isSingular(artlm(fit_int_dist, "urb_cat_dist:dfe")),
+                isSingular(artlm(fit_int_isa,  "urb_cat_isa:dfe"))
+              ))
+              
+              # ANOVA summaries
+              aov_dfe      <- anova(fit_dfe)
+              aov_dist     <- anova(fit_dist)
+              aov_isa      <- anova(fit_isa)
+              aov_int_dist <- anova(fit_int_dist)
+              aov_int_isa  <- anova(fit_int_isa)
+              
+              # Extract p-values
+              foliar_PM_art_nest2_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+              foliar_PM_art_nest2_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+              foliar_PM_art_nest2_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+              foliar_PM_art_nest2_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+              foliar_PM_art_nest2_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+              foliar_PM_art_nest2_pvals[i, 7] <- as.character(singular_flag)
+              
+              # Pairwise comparisons
+              pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+              pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+              
+              letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+              letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+              
+              foliar_PM_art_nest2_pairwise_dist[i, 2:7]  <- pw_dist$p.value[1:6]
+              foliar_PM_art_nest2_pairwise_dist[i, 8:11] <- letters_dist$Letter[1:4]
+              
+              foliar_PM_art_nest2_pairwise_isa[i, 2:7]  <- pw_isa$p.value[1:6]
+              foliar_PM_art_nest2_pairwise_isa[i, 8:11] <- letters_isa$Letter[1:4]
+              
+            }, error = function(e) {
+              message("Failed for element: ", element, " — ", e$message)
+            })
+          }        
+        
+        # Post-processing helper function
+        finalize_matrix <- function(mat, numeric_cols, filepath) {
+          df <- as.data.frame(mat)
+          df[, numeric_cols] <- lapply(df[, numeric_cols], as.numeric)
+          df[] <- lapply(df, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+          write.csv(df, filepath, row.names = TRUE)
+          df
+        }
+        
+        
+        foliar_PM_art_nest2_pvals <- finalize_matrix(
+          foliar_PM_art_nest2_pvals, 2:6,  # columns 2:6 only, not column 7
+          file.path(stats_dir, "foliar_PM_art_nest2_pvals.csv"))
+        
+        foliar_PM_art_nest2_pairwise_dist <- finalize_matrix(
+          foliar_PM_art_nest2_pairwise_dist, 2:7,
+          file.path(stats_dir, "foliar_PM_art_nest2_pairwise_dist.csv"))
+        
+        foliar_PM_art_nest2_pairwise_isa <- finalize_matrix(
+          foliar_PM_art_nest2_pairwise_isa, 2:7,
+          file.path(stats_dir, "foliar_PM_art_nest2_pairwise_isa.csv"))
+
+# === AMBIENT ===
+
+# Initialize matrices
+
+ambient_PM_art_nest2_pvals <- matrix(data = NA, nrow = 44, ncol = 7)
+colnames(ambient_PM_art_nest2_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist",
+                                     "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA",
+                                     "Singular_Fit")
+
+ambient_PM_art_nest2_pvals[, 1] <- ambient_element_names
+
+pairwise_cols_ambient <- c("Element",
+                            "Rural,0 - Rural,90",
+                            "Rural,0 - Rural,Open",
+                            "Rural,0 - Urban,0",
+                            "Rural,0 - Urban,90",
+                            "Rural,0 - Urban,Open",
+                            "Rural,90 - Rural,Open",
+                            "Rural,90 - Urban,0",
+                            "Rural,90 - Urban,90",
+                            "Rural,90 - Urban,Open",
+                            "Rural,Open - Urban,0",
+                            "Rural,Open - Urban,90",
+                            "Rural,Open - Urban,Open",
+                            "Urban,0 - Urban,90",
+                            "Urban,0 - Urban,Open",
+                            "Urban,90 - Urban,Open",
+                            "Rural0", "Rural90", "RuralOpen",
+                            "Urban0", "Urban90", "UrbanOpen")
+
+ambient_PM_art_nest2_pairwise_dist <- matrix(data = NA, nrow = 44, ncol = 22,
+                                        dimnames = list(NULL, pairwise_cols_ambient))
+ambient_PM_art_nest2_pairwise_dist[, 1] <- ambient_element_names
+
+ambient_PM_art_nest2_pairwise_isa <- matrix(data = NA, nrow = 44, ncol = 22,
+                                       dimnames = list(NULL, pairwise_cols_ambient))
+ambient_PM_art_nest2_pairwise_isa[, 1] <- ambient_element_names
+
+# Loop
+library(ARTool)
+
+for (i in 1:44) {
+  element <- ambient_element_names[i]
+  
+  dat <- AmbientPMCompxUNESites[complete.cases(AmbientPMCompxUNESites[, element]), ]
+  
+  if (nrow(dat) == 0) next
+  
+  tryCatch({
+    
+    # Fit 5 models
+    fit_dfe      <- art(as.formula(paste(element, "~ dfe + (1 | UNE_site/replicate)")), data = dat)
+    fit_dist     <- art(as.formula(paste(element, "~ urb_cat_dist + (1 | UNE_site/replicate)")), data = dat)
+    fit_isa      <- art(as.formula(paste(element, "~ urb_cat_isa + (1 | UNE_site/replicate)")), data = dat)
+    fit_int_dist <- art(as.formula(paste(element, "~ urb_cat_dist * dfe + (1 | UNE_site/replicate)")), data = dat)
+    fit_int_isa  <- art(as.formula(paste(element, "~ urb_cat_isa * dfe + (1 | UNE_site/replicate)")), data = dat)
+    
+    # Check singularity directly on underlying lmer models
+    singular_flag <- any(c(
+      isSingular(artlm(fit_dfe,      "dfe")),
+      isSingular(artlm(fit_dist,     "urb_cat_dist")),
+      isSingular(artlm(fit_isa,      "urb_cat_isa")),
+      isSingular(artlm(fit_int_dist, "urb_cat_dist:dfe")),
+      isSingular(artlm(fit_int_isa,  "urb_cat_isa:dfe"))
+    ))
+    
+    # ANOVA summaries
+    aov_dfe      <- anova(fit_dfe)
+    aov_dist     <- anova(fit_dist)
+    aov_isa      <- anova(fit_isa)
+    aov_int_dist <- anova(fit_int_dist)
+    aov_int_isa  <- anova(fit_int_isa)
+    
+    # Extract p-values
+    ambient_PM_art_nest2_pvals[i, 2] <- aov_dfe["dfe", "Pr(>F)"]
+    ambient_PM_art_nest2_pvals[i, 3] <- aov_dist["urb_cat_dist", "Pr(>F)"]
+    ambient_PM_art_nest2_pvals[i, 4] <- aov_int_dist["urb_cat_dist:dfe", "Pr(>F)"]
+    ambient_PM_art_nest2_pvals[i, 5] <- aov_isa["urb_cat_isa", "Pr(>F)"]
+    ambient_PM_art_nest2_pvals[i, 6] <- aov_int_isa["urb_cat_isa:dfe", "Pr(>F)"]
+    ambient_PM_art_nest2_pvals[i, 7] <- as.character(singular_flag)
+    
+    # Pairwise comparisons
+    pw_dist <- as.data.frame(art.con(fit_int_dist, ~ urb_cat_dist * dfe, adjust = "none"))
+    pw_isa  <- as.data.frame(art.con(fit_int_isa,  ~ urb_cat_isa  * dfe, adjust = "none"))
+    
+    letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05)
+    letters_isa  <- cldList(p.value ~ contrast, data = pw_isa,  threshold = 0.05)
+    
+    ambient_PM_art_nest2_pairwise_dist[i, 2:16]  <- pw_dist$p.value[1:15]
+    ambient_PM_art_nest2_pairwise_dist[i, 17:22] <- letters_dist$Letter[1:6]
+    
+    ambient_PM_art_nest2_pairwise_isa[i, 2:16]  <- pw_isa$p.value[1:15]
+    ambient_PM_art_nest2_pairwise_isa[i, 17:22] <- letters_isa$Letter[1:6]
+    
+  }, error = function(e) {
+    message("Failed for element: ", element, " — ", e$message)
+  })
+}     
+
+# Post-processing — reusing the same finalize_matrix function from the foliar section
+ambient_PM_art_nest2_pvals <- finalize_matrix(
+  ambient_PM_art_nest2_pvals, 2:6,  # only columns 2:6 get numeric conversion, not column 7
+  file.path(stats_dir, "ambient_PM_art_nest2_pvals.csv"))
+
+ambient_PM_art_nest2_pairwise_dist <- finalize_matrix(
+  ambient_PM_art_nest2_pairwise_dist, 2:16,
+  file.path(stats_dir, "ambient_PM_art_nest2_pairwise_dist.csv"))
+
+ambient_PM_art_nest2_pairwise_isa <- finalize_matrix(
+  ambient_PM_art_nest2_pairwise_isa, 2:16,
+  file.path(stats_dir, "ambient_PM_art_nest2_pairwise_isa.csv"))         
+
+```
+
+##### GLMM
+```{r}
+
+foliar_PM_tw_pvals <- matrix(data=NA, nrow=26, ncol=6)
+colnames(foliar_PM_tw_pvals) <- c("Element", "Edge_vs_Interior", "Urb_v_Rural_Dist", 
+                                   "Interaction_Dist", "Urb_v_Rural_ISA", "Interaction_ISA")
+foliar_PM_tw_pvals[,1] <- all_element_names
+
+for (i in 1:26) {
+  element <- all_element_names[i]
+  
+  # Fit ISA model
+  fit_isa <- glmmTMB(as.formula(paste(element, "~ urb_cat_isa * dfe + (1 | UNE_site/replicate)")),
+                     ziformula = ~1,
+                     family = tweedie,
+                     data = FoliarPMCompxUNESites)
+  
+  # Fit DIST model
+  fit_dist <- glmmTMB(as.formula(paste(element, "~ urb_cat_dist * dfe + (1 | UNE_site/replicate)")),
+                      ziformula = ~1,
+                      family = tweedie,
+                      data = FoliarPMCompxUNESites)
+  
+  # Fit DFE-only model
+  fit_dfe <- glmmTMB(as.formula(paste(element, "~ dfe + (1 | UNE_site/replicate)")),
+                     ziformula = ~1,
+                     family = tweedie,
+                     data = FoliarPMCompxUNESites)
+  
+  # Extract p-values
+  p_dfe     <- summary(fit_dfe)$coefficients$cond["dfe90", "Pr(>|z|)"]
+  p_isa     <- summary(fit_isa)$coefficients$cond["urb_cat_isaUrban", "Pr(>|z|)"]
+  p_int_isa <- summary(fit_isa)$coefficients$cond["urb_cat_isaUrban:dfe90", "Pr(>|z|)"]
+  p_dist    <- summary(fit_dist)$coefficients$cond["urb_cat_distUrban", "Pr(>|z|)"]
+  p_int_dist <- summary(fit_dist)$coefficients$cond["urb_cat_distUrban:dfe90", "Pr(>|z|)"]
+  
+  # Fill matrix row
+  foliar_PM_tw_pvals[i, 2] <- p_dfe
+  foliar_PM_tw_pvals[i, 3] <- p_dist
+  foliar_PM_tw_pvals[i, 4] <- p_int_dist
+  foliar_PM_tw_pvals[i, 5] <- p_isa
+  foliar_PM_tw_pvals[i, 6] <- p_int_isa
+}
+
+# Convert to dataframe and round
+foliar_PM_tw_pvals <- as.data.frame(foliar_PM_tw_pvals)
+foliar_PM_tw_pvals[,2:6] <- lapply(foliar_PM_tw_pvals[,2:6], 
+                                    function(x) signif(as.numeric(x), digits = 2))        
+        
+        
+        
 ```
 
 #### Testing Pairwise Comparisons ART ANOVA
@@ -2714,7 +2722,7 @@ element <- all_element_names[i]
         combined_df[[new_colname]] <- df$`Ambient - Foliar`
       }
     
-    write.csv(combined_df, file.path(stats_dir,"allPM_AvF_kw_pvals.csv"), row.names = TRUE)
+    write.csv(combined_df, file.path(stats_dir,"allPM_AvF_kw_pvals.csv"), file.path(stats_dir,"allPM_nonroadedge_art_pairwise.csv"),row.names = TRUE)
     write.csv(allPM_ruraledge_isa_kw_pairwise, file.path(stats_dir,"allPM_ruraledge_isa_kw_pairwise.csv"), row.names = TRUE)
     write.csv(allPM_ruralinterior_isa_kw_pairwise, file.path(stats_dir,"allPM_ruralinterior_isa_kw_pairwise.csv"), row.names = TRUE)
     write.csv(allPM_urbanedge_isa_kw_pairwise, file.path(stats_dir,"allPM_urbanedge_isa_kw_pairwise.csv"), row.names = TRUE)
@@ -3258,7 +3266,7 @@ element <- all_element_names[i]
         combined_df[[new_colname]] <- df$Ambient_v_Foliar
       }
     
-    write.csv(combined_df, "allPM_AvF_art_pvals.csv", row.names = TRUE)
+    write.csv(combined_df, "allPM_AvF_art_pvals.csv", file.path(stats_dir,"allPM_nonroadedge_art_pairwise.csv"), row.names = TRUE)
     write.csv(allPM_nonroadedge_art_pairwise, file.path(stats_dir,"allPM_nonroadedge_art_pairwise.csv"), row.names = TRUE)
     write.csv(allPM_nonroadinterior_art_pairwise, file.path(stats_dir,"allPM_nonroadinterior_art_pairwise.csv"), row.names = TRUE)
     write.csv(allPM_roadedge_art_pairwise, file.path(stats_dir,"allPM_roadedge_art_pairwise.csv"), row.names = TRUE)
@@ -3508,7 +3516,7 @@ element <- all_element_names[i]
 ## Categorical Plots for Each Element by Urban/Rural and Edge/Interior
 ### Means
 #### Foliar Means
-```{r}
+```{r, eval =FALSE}
 # defining list of element names
 element_names <- all_element_names
 
@@ -3689,7 +3697,7 @@ ggsave(paste(element,"foliar_urbcatxdfe.png"), path = file.path(figures_dir,"Ele
 ```
 
 #### Ambient Means
-```{r}
+```{r, eval =FALSE}
 element_names <- all_element_names
 
 # making a list to store figures in
@@ -3884,7 +3892,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), path = file.path(figures_dir,"El
 ```
 
 #### Comparing Ambient & Foliar Means
-```{r}
+```{r, eval =FALSE}
 
 # making the figure            
   # creating a list for figures
@@ -3991,7 +3999,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), path = file.path(figures_dir,"El
 ```
 
 #### Combining Them
-```{r}
+```{r, eval =FALSE}
 
 for (i in c(1:26)) {
   element <- element_names[i]
@@ -6643,6 +6651,746 @@ ggsave(paste(element,"_urbcatxdfe_jit.png"), plot = fig, path = file.path(figure
     
 ```
 
+### Medians with Nested Model
+#### Foliar
+```{r}
+# defining list of element names
+element_names <- all_element_names
+
+# creating a list for figures
+foliar_element_urbcatxdfe_medians_list_nest1 <- list()
+foliar_element_urbcatxdfe_medians_list_nest1_isa <- list()
+foliar_element_urbcatxdfe_medians_list_nest1_dist <- list()
+foliar_element_urbcatxdfe_medians_list_nest1_isa_pub <- list()
+
+# loop to make categorical figures 
+
+for (i in c(1:26)) {
+  
+element <- element_names[i] 
+
+# summarize the element by urbanization and distance from edge
+    summary_isa <- cbind(aggregate(FoliarPMCompxUNESites[[element]],list(FoliarPMCompxUNESites$urb_cat_isa,FoliarPMCompxUNESites$dfe),FUN=ci95_median_boot))
+    summary_isa <- as.matrix(summary_isa)
+    colnames(summary_isa) <- c("urb_cat_isa","dfe","perc_comp","lower","upper")
+    summary_isa <- as.data.frame(summary_isa)
+    summary_isa$perc_comp <- as.numeric(summary_isa$perc_comp)
+    summary_isa$lower     <- as.numeric(summary_isa$lower)
+    summary_isa$upper     <- as.numeric(summary_isa$upper)
+
+    summary_dist <- cbind(aggregate(FoliarPMCompxUNESites[[element]],list(FoliarPMCompxUNESites$urb_cat_dist,FoliarPMCompxUNESites$dfe),FUN=ci95_median_boot))
+    summary_dist <- as.matrix(summary_dist)
+    colnames(summary_dist) <- c("urb_cat_dist","dfe","perc_comp","lower","upper")
+    summary_dist <- as.data.frame(summary_dist)
+    summary_dist$perc_comp <- as.numeric(summary_dist$perc_comp)
+    summary_dist$lower     <- as.numeric(summary_dist$lower)
+    summary_dist$upper     <- as.numeric(summary_dist$upper)
+ 
+  # add in the significance letter associated with each group
+      summary_isa$letter <- NA
+      summary_isa$letter[1] <- foliar_PM_art_nest1_pairwise_isa$Rural0[foliar_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[2] <- foliar_PM_art_nest1_pairwise_isa$Urban0[foliar_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[3] <- foliar_PM_art_nest1_pairwise_isa$Rural90[foliar_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[4] <- foliar_PM_art_nest1_pairwise_isa$Urban90[foliar_PM_art_nest1_pairwise_isa$Element==element]
+      
+      summary_isa$LETTER <- NA
+      summary_isa$LETTER[1] <- allPM_ruraledge_isa_art_nest1_pairwise$`Foliar`[allPM_ruraledge_isa_art_nest1_pairwise$Element==element]
+      summary_isa$LETTER[2] <- allPM_urbanedge_isa_art_nest1_pairwise$`Foliar`[allPM_urbanedge_isa_art_nest1_pairwise$Element==element]
+      summary_isa$LETTER[3] <- allPM_ruralinterior_isa_art_nest1_pairwise$`Foliar`[allPM_ruralinterior_isa_art_nest1_pairwise$Element==element]
+      summary_isa$LETTER[4] <- allPM_urbaninterior_isa_art_nest1_pairwise$`Foliar`[allPM_urbaninterior_isa_art_nest1_pairwise$Element==element]
+      
+      summary_dist$letter <- NA
+      summary_dist$letter[1] <- foliar_PM_art_nest1_pairwise_dist$Rural0[foliar_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[2] <- foliar_PM_art_nest1_pairwise_dist$Urban0[foliar_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[3] <- foliar_PM_art_nest1_pairwise_dist$Rural90[foliar_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[4] <- foliar_PM_art_nest1_pairwise_dist$Urban90[foliar_PM_art_nest1_pairwise_dist$Element==element]
+      
+      summary_dist$LETTER <- NA
+      summary_dist$LETTER[1] <- allPM_ruraledge_dist_art_nest1_pairwise$`Foliar`[allPM_ruraledge_dist_art_nest1_pairwise$Element==element]
+      summary_dist$LETTER[2] <- allPM_urbanedge_dist_art_nest1_pairwise$`Foliar`[allPM_urbanedge_dist_art_nest1_pairwise$Element==element]
+      summary_dist$LETTER[3] <- allPM_ruralinterior_dist_art_nest1_pairwise$`Foliar`[allPM_ruralinterior_dist_art_nest1_pairwise$Element==element]
+      summary_dist$LETTER[4] <- allPM_urbaninterior_dist_art_nest1_pairwise$`Foliar`[allPM_urbaninterior_dist_art_nest1_pairwise$Element==element]
+
+# figures
+      
+  dodge <- position_dodge(width = 0.3)
+
+    fig_isa <- ggplot(data = summary_isa,
+                      mapping = aes(x = urb_cat_isa,
+                                    y = perc_comp,
+                                    col = dfe,
+                                    group = dfe)) +   # ensures consistent dodging
+      scale_color_manual(values = c("grey","black")) +
+      
+        # y limits 
+        ylim(axes_limits_medians$ymin_isa[i],axes_limits_medians$ymax_isa[i]) +
+      
+        # Points
+        geom_point(position = dodge, size = 3) +
+        
+        # Error bars
+        geom_errorbar(aes(ymin = lower, ymax = upper),
+                      width = 0.2,
+                      position = dodge) +
+        
+        # Significance letters
+        geom_text(aes(label = letter, y = upper),
+                  position = dodge,
+                  hjust = 0.5,
+                  vjust = -0.3,
+                  size = 5,
+                  fontface = "bold") +
+        geom_text(aes(label = LETTER, y = lower), 
+                  position = dodge, 
+                  hjust=0.5, 
+                  vjust = 1.3, 
+                  size = 5, 
+                  fontface = "bold") +
+  
+        
+        # Annotate text for p-values
+        annotate(geom = "text", x = 0.5, y = Inf, size = 3,
+                 label = paste(
+                   "Distance from Edge: p", ifelse(foliar_PM_art_nest1_pvals$Edge_vs_Interior[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Edge_vs_Interior[i]),
+                                                  " < 0.001"),
+                   "\nUrban vs. Rural: p", ifelse(foliar_PM_art_nest1_pvals$Urb_v_Rural_ISA[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Urb_v_Rural_ISA[i]),
+                                                  " < 0.001"),
+                   "\nDfE X Urb. Cat.: p", ifelse(foliar_PM_art_nest1_pvals$Interaction_ISA[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Interaction_ISA[i]),
+                                                  " < 0.001")),
+                 hjust = 0, vjust = 1) +
+        
+        # Labels and theme
+        labs(title = "Foliar PM", x = NULL, y = " ") +
+        theme_minimal() +
+        theme(plot.title = element_text(size = 25),
+              legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size = 15),
+              axis.title.x = element_text(color = "black", size = 15),
+              axis.text.y = element_text(color = "black", size = 15),
+              axis.title.y = element_text(color = "black", size = 15)) 
+          
+    fig_dist <- ggplot(data = summary_dist,
+                      mapping = aes(x = urb_cat_dist,
+                                    y = perc_comp,
+                                    col = dfe,
+                                    group = dfe)) +   # ensures consistent dodging
+      scale_color_manual(values = c("grey","black")) +
+      
+        # Points
+        geom_point(position = dodge, size = 3) +
+      
+        # y limits 
+        ylim(axes_limits_medians$ymin_dist[i],axes_limits_medians$ymax_dist[i]) +
+        
+        # Error bars
+        geom_errorbar(aes(ymin = lower, ymax = upper),
+                      width = 0.2,
+                      position = dodge) +
+        
+        # Significance letters
+        geom_text(aes(label = letter, y = upper),
+                  position = dodge,
+                  hjust = 0.5,
+                  vjust = -0.3,
+                  size = 5,
+                  fontface = "bold") +
+        geom_text(aes(label = LETTER, y = lower), 
+                  position = dodge, 
+                  hjust=0.5, 
+                  vjust=1.3, 
+                  size = 5, 
+                  fontface = "bold") +
+        
+        # Annotate text for p-values
+        annotate(geom = "text", x = 0.5, y = Inf, size = 3,
+                 label = paste(
+                   "Distance from Edge: p", ifelse(foliar_PM_art_nest1_pvals$Edge_vs_Interior[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Edge_vs_Interior[i]),
+                                                  " < 0.001"),
+                   "\nUrban vs. Rural: p", ifelse(foliar_PM_art_nest1_pvals$Urb_v_Rural_ISA[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Urb_v_Rural_Dist[i]),
+                                                  " < 0.001"),
+                   "\nDfE X Urb. Cat.: p", ifelse(foliar_PM_art_nest1_pvals$Interaction_ISA[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Interaction_Dist[i]),
+                                                  " < 0.001")),
+                 hjust = 0, vjust = 1) +
+        
+        # Labels and theme
+        labs(title = "Foliar PM", x = NULL, y = " ") +
+        theme_minimal() +
+        theme(plot.title = element_text(size = 25),
+              legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size = 15),
+              axis.title.x = element_text(color = "black", size = 15),
+              axis.text.y = element_text(color = "black", size = 15),
+              axis.title.y = element_text(color = "black", size = 15)) 
+    
+    fig_pub <- ggplot(data = summary_isa,
+                      mapping = aes(x = urb_cat_isa,
+                                    y = perc_comp,
+                                    col = dfe,
+                                    group = dfe)) +   # ensures consistent dodging
+      scale_color_manual(values = c("grey","black")) +
+      
+        # Points
+        geom_point(position = dodge, size = 3) +
+      
+        # y limits 
+        ylim(axes_limits_medians$ymin_isa[i],axes_limits_medians$ymax_isa[i]) +
+        
+        # Error bars
+        geom_errorbar(aes(ymin = lower, ymax = upper),
+                      width = 0.2,
+                      position = dodge) +
+        
+        # Significance letters
+        geom_text(aes(label = letter, y = upper),
+                  position = dodge,
+                  hjust = 0.5,
+                  vjust = -0.3,
+                  size = 5,
+                  fontface = "bold") +
+        geom_text(aes(label = LETTER, y = lower), 
+                  position = dodge, 
+                  hjust=0.5, 
+                  vjust=1.3, 
+                  size = 5, 
+                  fontface = "bold") +
+        
+        # Annotate text for p-values
+        annotate(geom = "text", x = 0.5, y = Inf, size = 3,
+                 label = paste(
+                   "Distance from Edge: p", ifelse(foliar_PM_art_nest1_pvals$Edge_vs_Interior[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Edge_vs_Interior[i]),
+                                                  " < 0.001"),
+                   "\nUrban vs. Rural: p", ifelse(foliar_PM_art_nest1_pvals$Urb_v_Rural_ISA[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Urb_v_Rural_ISA[i]),
+                                                  " < 0.001"),
+                   "\nDfE X Urb. Cat.: p", ifelse(foliar_PM_art_nest1_pvals$Interaction_ISA[i] > 0.001,
+                                                  paste("=", foliar_PM_art_nest1_pvals$Interaction_ISA[i]),
+                                                  " < 0.001")),
+                 hjust = 0, vjust = 1) +
+        
+        # Labels and theme
+        labs(title = "Foliar PM", x = NULL, 
+             # y = paste("% ",element),
+             y = " "
+             ) +
+        theme_minimal() +
+        theme(plot.title = element_text(size = 18, hjust = 0.5),
+              legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size = 15),
+              axis.title.x = element_text(color = "black", size = 15),
+              axis.text.y = element_text(color = "black", size = 15),
+              axis.title.y = element_text(color = "black", size = 15)) 
+    
+      
+figs <- plot_grid(fig_isa,fig_dist,labels=NULL,ncol=1,rel_widths=c(1,1))
+
+
+foliar_element_urbcatxdfe_medians_list_nest1_isa[[element]] <- fig_isa
+foliar_element_urbcatxdfe_medians_list_nest1_dist[[element]] <- fig_dist
+foliar_element_urbcatxdfe_medians_list_nest1_isa_pub[[element]] <- fig_pub
+
+foliar_element_urbcatxdfe_medians_list_nest1[[element]] <- figs  # Store each figure in the list we made
+
+# printing figure
+ggsave(paste(element,"foliar_urbcatxdfe_art_nest1.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Foliar"), width = 4,
+  height = 8, bg = "white")
+}
+
+```
+
+
+#### Ambient
+```{r}
+# defining list of element names
+element_names <- all_element_names
+
+# creating a list for figures
+ambient_element_urbcatxdfe_medians_list_nest1 <- list()
+ambient_element_urbcatxdfe_medians_list_nest1_isa <- list()
+ambient_element_urbcatxdfe_medians_list_nest1_dist <- list()
+ambient_element_urbcatxdfe_medians_list_nest1_isa_pub <- list()
+
+# loop to make categorical figures 
+
+for (i in c(1:26)) {
+  
+element <- element_names[i] 
+
+# summarize the element by urbanization and distance from edge
+    summary_isa <- cbind(aggregate(AmbientPMCompxUNESites[[element]],list(AmbientPMCompxUNESites$urb_cat_isa,AmbientPMCompxUNESites$dfe),FUN=ci95_median_boot))
+    summary_isa <- as.matrix(summary_isa)
+    colnames(summary_isa) <- c("urb_cat_isa","dfe","perc_comp","lower","upper")
+    summary_isa <- as.data.frame(summary_isa)
+    summary_isa$perc_comp <- as.numeric(summary_isa$perc_comp)
+    summary_isa$lower     <- as.numeric(summary_isa$lower)
+    summary_isa$upper     <- as.numeric(summary_isa$upper)
+
+    summary_dist <- cbind(aggregate(AmbientPMCompxUNESites[[element]],list(AmbientPMCompxUNESites$urb_cat_dist,AmbientPMCompxUNESites$dfe),FUN=ci95_median_boot))
+    summary_dist <- as.matrix(summary_dist)
+    colnames(summary_dist) <- c("urb_cat_dist","dfe","perc_comp","lower","upper")
+    summary_dist <- as.data.frame(summary_dist)
+    summary_dist$perc_comp <- as.numeric(summary_dist$perc_comp)
+    summary_dist$lower     <- as.numeric(summary_dist$lower)
+    summary_dist$upper     <- as.numeric(summary_dist$upper)
+ 
+  # add in the significance letter associated with each group
+      summary_isa$letter <- NA
+      summary_isa$letter[1] <- ambient_PM_art_nest1_pairwise_isa$Rural0[ambient_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[2] <- ambient_PM_art_nest1_pairwise_isa$Urban0[ambient_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[3] <- ambient_PM_art_nest1_pairwise_isa$Rural90[ambient_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[4] <- ambient_PM_art_nest1_pairwise_isa$Urban90[ambient_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[5] <- ambient_PM_art_nest1_pairwise_isa$RuralOpen[ambient_PM_art_nest1_pairwise_isa$Element==element]
+      summary_isa$letter[6] <- ambient_PM_art_nest1_pairwise_isa$UrbanOpen[ambient_PM_art_nest1_pairwise_isa$Element==element]
+      
+      summary_isa$LETTER <- NA
+      summary_isa$LETTER[1] <- allPM_ruraledge_isa_art_nest1_pairwise$`Ambient`[allPM_ruraledge_isa_art_nest1_pairwise$Element==element]
+      summary_isa$LETTER[2] <- allPM_urbanedge_isa_art_nest1_pairwise$`Ambient`[allPM_urbanedge_isa_art_nest1_pairwise$Element==element]
+      summary_isa$LETTER[3] <- allPM_ruralinterior_isa_art_nest1_pairwise$`Ambient`[allPM_ruralinterior_isa_art_nest1_pairwise$Element==element]
+      summary_isa$LETTER[4] <- allPM_urbaninterior_isa_art_nest1_pairwise$`Ambient`[allPM_urbaninterior_isa_art_nest1_pairwise$Element==element]
+      
+      summary_dist$letter <- NA
+      summary_dist$letter[1] <- ambient_PM_art_nest1_pairwise_dist$Rural0[ambient_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[2] <- ambient_PM_art_nest1_pairwise_dist$Urban0[ambient_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[3] <- ambient_PM_art_nest1_pairwise_dist$Rural90[ambient_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[4] <- ambient_PM_art_nest1_pairwise_dist$Urban90[ambient_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[5] <- ambient_PM_art_nest1_pairwise_dist$RuralOpen[ambient_PM_art_nest1_pairwise_dist$Element==element]
+      summary_dist$letter[6] <- ambient_PM_art_nest1_pairwise_dist$UrbanOpen[ambient_PM_art_nest1_pairwise_dist$Element==element]
+      
+      summary_dist$LETTER <- NA
+      summary_dist$LETTER[1] <- allPM_ruraledge_dist_art_nest1_pairwise$`Ambient`[allPM_ruraledge_dist_art_nest1_pairwise$Element==element]
+      summary_dist$LETTER[2] <- allPM_urbanedge_dist_art_nest1_pairwise$`Ambient`[allPM_urbanedge_dist_art_nest1_pairwise$Element==element]
+      summary_dist$LETTER[3] <- allPM_ruralinterior_dist_art_nest1_pairwise$`Ambient`[allPM_ruralinterior_dist_art_nest1_pairwise$Element==element]
+      summary_dist$LETTER[4] <- allPM_urbaninterior_dist_art_nest1_pairwise$`Ambient`[allPM_urbaninterior_dist_art_nest1_pairwise$Element==element]
+      
+# figures
+      
+  dodge <- position_dodge(width = 0.3)
+
+    fig_isa <- ggplot(data = summary_isa,
+                      mapping = aes(x = urb_cat_isa,
+                                    y = perc_comp,
+                                    col = dfe,
+                                    group = dfe)) +   # ensures consistent dodging
+      scale_color_manual(values = c("grey","black","lightblue")) +
+      
+        # Points
+        geom_point(position = dodge, size = 3) +
+      
+        # y limits 
+        ylim(axes_limits_medians$ymin_isa[i],axes_limits_medians$ymax_isa[i]) +
+        
+        # Error bars
+        geom_errorbar(aes(ymin = lower, ymax = upper),
+                      width = 0.2,
+                      position = dodge) +
+        
+        # Significance letters
+        geom_text(aes(label = letter, y = upper),
+                position = dodge,
+                  hjust = 0.5,
+                  vjust = -0.3,
+                  size = 5,
+                  fontface = "bold") +
+        geom_text(aes(label = LETTER, y = lower), 
+                  position = dodge, 
+                  hjust=0.5, 
+                  vjust=1.3, 
+                  size = 5, 
+                  fontface = "bold") +
+        
+        # Annotate text for p-values
+         annotate(geom = "text", x = 0.5, y = Inf, size = 3,
+                 label = paste(
+                   "Distance from Edge: p", ifelse(ambient_PM_art_nest1_pvals$Edge_vs_Interior[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Edge_vs_Interior[i]),
+                                                  " < 0.001"),
+                   "\nUrban vs. Rural: p", ifelse(ambient_PM_art_nest1_pvals$Urb_v_Rural_ISA[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Urb_v_Rural_ISA[i]),
+                                                  " < 0.001"),
+                   "\nDfE X Urb. Cat.: p", ifelse(ambient_PM_art_nest1_pvals$Interaction_ISA[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Interaction_ISA[i]),
+                                                  " < 0.001")),
+                 hjust = 0, vjust = 1) +
+        
+        # Labels and theme
+        labs(title = "Ambient PM", x = NULL, y = paste("%",element)) +
+        theme_minimal() +
+        theme(plot.title = element_text(size = 25),
+              legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size = 15),
+              axis.title.x = element_text(color = "black", size = 15),
+              axis.text.y = element_text(color = "black", size = 15),
+              axis.title.y = element_text(color = "black", size = 15)) +
+        guides(color = guide_legend(title = "Distance\nFrom Edge (m)"))
+          
+    fig_dist <- ggplot(data = summary_dist,
+                      mapping = aes(x = urb_cat_dist,
+                                    y = perc_comp,
+                                    col = dfe,
+                                    group = dfe)) +   # ensures consistent dodging
+      scale_color_manual(values = c("grey","black","lightblue")) +
+      
+      
+        # y limits 
+        ylim(axes_limits_medians$ymin_dist[i],axes_limits_medians$ymax_dist[i]) +
+      
+        # Points
+        geom_point(position = dodge, size = 3) +
+        
+        # Error bars
+        geom_errorbar(aes(ymin = lower, ymax = upper),
+                      width = 0.2,
+                      position = dodge) +
+        
+        # Significance letters
+        geom_text(aes(label = letter, y = upper),
+                  position = dodge,
+                  hjust = 0.5,
+                  vjust = -0.3,
+                  size = 5,
+                  fontface = "bold") +
+        geom_text(aes(label = LETTER, y = lower), 
+                    position = dodge, 
+                    hjust=0.5, 
+                    vjust=1.3, 
+                    size = 5, 
+                    fontface = "bold") +
+        
+        # Annotate text for p-values
+         annotate(geom = "text", x = 0.5, y = Inf, size = 3,
+                 label = paste(
+                   "Distance from Edge: p", ifelse(ambient_PM_art_nest1_pvals$Edge_vs_Interior[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Edge_vs_Interior[i]),
+                                                  " < 0.001"),
+                   "\nUrban vs. Rural: p", ifelse(ambient_PM_art_nest1_pvals$Urb_v_Rural_Dist[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Urb_v_Rural_Dist[i]),
+                                                  " < 0.001"),
+                   "\nDfE X Urb. Cat.: p", ifelse(ambient_PM_art_nest1_pvals$Interaction_Dist[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Interaction_Dist[i]),
+                                                  " < 0.001")),
+                 hjust = 0, vjust = 1) +
+        
+        # Labels and theme
+        labs(title = "Ambient PM", x = NULL, y = paste("%",element)) +
+        theme_minimal() +
+        theme(plot.title = element_text(size = 25),
+              legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size = 15),
+              axis.title.x = element_text(color = "black", size = 15),
+              axis.text.y = element_text(color = "black", size = 15),
+              axis.title.y = element_text(color = "black", size = 15))
+    
+    fig_pub <- ggplot(data = summary_isa,
+                      mapping = aes(x = urb_cat_isa,
+                                    y = perc_comp,
+                                    col = dfe,
+                                    group = dfe)) +   # ensures consistent dodging
+      scale_color_manual(values = c("grey","black","lightblue")) +
+      
+        # Points
+        geom_point(position = dodge, size = 3) +
+      
+        # y limits 
+        ylim(axes_limits_medians$ymin_isa[i],axes_limits_medians$ymax_isa[i]) +
+        
+        # Error bars
+        geom_errorbar(aes(ymin = lower, ymax = upper),
+                      width = 0.2,
+                      position = dodge) +
+        
+        # Significance letters
+        geom_text(aes(label = letter, y = upper),
+                  position = dodge,
+                  hjust = 0.5,
+                  vjust = -0.3,
+                  size = 5,
+                  fontface = "bold") +
+        geom_text(aes(label = LETTER, y = lower), 
+                  position = dodge, 
+                  hjust=0.5, 
+                  vjust=1.3, 
+                  size = 5, 
+                  fontface = "bold") +
+        
+        # Annotate text for p-values
+         annotate(geom = "text", x = 0.5, y = Inf, size = 3,
+                 label = paste(
+                   "Distance from Edge: p", ifelse(ambient_PM_art_nest1_pvals$Edge_vs_Interior[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Edge_vs_Interior[i]),
+                                                  " < 0.001"),
+                   "\nUrban vs. Rural: p", ifelse(ambient_PM_art_nest1_pvals$Urb_v_Rural_ISA[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Urb_v_Rural_ISA[i]),
+                                                  " < 0.001"),
+                   "\nDfE X Urb. Cat.: p", ifelse(ambient_PM_art_nest1_pvals$Interaction_ISA[i] > 0.001,
+                                                  paste("=", ambient_PM_art_nest1_pvals$Interaction_ISA[i]),
+                                                  " < 0.001")),
+                 hjust = 0, vjust = 1) +
+        
+        # Labels and theme
+        labs(title = "Ambient PM", x = NULL, y = paste("%",element)) +
+        theme_minimal() +
+        theme(plot.title = element_text(size = 18, hjust = 0.5),
+              legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size = 15),
+              axis.title.x = element_text(color = "black", size = 15),
+              axis.text.y = element_text(color = "black", size = 15),
+              axis.title.y = element_text(color = "black", size = 15)) +
+        guides(color = guide_legend(title = "Distance\nFrom Edge (m)"))
+      
+figs <- plot_grid(fig_isa,fig_dist,labels=NULL,ncol=1,rel_widths=c(1,1))
+
+
+ambient_element_urbcatxdfe_medians_list_nest1_isa[[element]] <- fig_isa
+ambient_element_urbcatxdfe_medians_list_nest1_dist[[element]] <- fig_dist
+ambient_element_urbcatxdfe_medians_list_nest1_isa_pub[[element]] <- fig_pub
+ambient_element_urbcatxdfe_medians_list_nest1[[element]] <- figs  # Store each figure in the list we made
+
+# printing figure
+
+ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians/Ambient"), width = 4,
+  height = 8, bg = "white")
+}
+
+```
+
+#### Comparing Ambient & Foliar Medians
+```{r}
+
+# calculating medians for both ambient & foliar groups
+
+        AvFmedians <- matrix(data=NA, nrow=2, ncol=26)
+        colnames(AvFmedians) <- all_element_names
+        rownames(AvFmedians) <- c("Ambient Median","Foliar Median")
+        
+  for (i in c(1:26)) {
+    
+  element <- all_element_names[i]
+  summary <- cbind(aggregate(AllCompxUNESites_NOopen[element],
+                             list(AllCompxUNESites_NOopen$particle_source),FUN=ci95_median_boot))
+  summary <- as.matrix(summary)
+  colnames(summary) <- c("particle_source","perc_comp","lower","upper")
+  summary <- as.data.frame(summary)
+  
+  AvFmedians[1,i] <- summary$perc_comp[1]
+  AvFmedians[2,i] <- summary$perc_comp[2]
+  
+  }
+
+# making the figure 
+
+  # creating a list for figures
+  all_element_cat_list_median <- list()
+  all_element_cat_list_median_nocap <- list()
+  
+  # loop to make categorical figures
+  
+  for (i in c(1:26)) {
+    
+  element <- all_element_names[i]
+  summary <- cbind(aggregate(AllCompxUNESites_NOopen[element],
+                             list(AllCompxUNESites_NOopen$particle_source),FUN=ci95_median_boot))
+  summary <- as.matrix(summary)
+  colnames(summary) <- c("particle_source","perc_comp","lower","upper")
+  summary <- as.data.frame(summary)
+  summary$perc_comp <- as.numeric(summary$perc_comp)
+  summary$lower     <- as.numeric(summary$lower)
+  summary$upper     <- as.numeric(summary$upper)
+  
+    # add in significance letter associated with each group
+        
+        summary$letter <- NA
+    
+        summary$letter[1] <- allPM_art_nest1_pairwise[i,3]
+        summary$letter[2] <- allPM_art_nest1_pairwise[i,4]
+          
+  
+  fig <- ggplot(data=summary, aes(x=particle_source, y=perc_comp, col=particle_source)) +
+    scale_color_manual(values = c("#B7C9E2", "darkgreen")) +
+    geom_point(position = position_dodge(width = 0.3), size = 4) +
+    geom_errorbar(aes(ymin = lower, ymax = upper),
+                  width = 0.2,
+                  linewidth = 1.2,
+                  position = position_dodge(width = 0.3)) +
+    labs(title = NULL,
+         x = NULL, 
+         y = paste("%", element)) +
+    theme_minimal() + 
+    annotate(geom = "text", x = 0.5, y = Inf, hjust = 0,
+             vjust = 1, size = 5, 
+             label=paste("p",ifelse(allPM_art_nest1_pairwise$`Ambient - Foliar`[i]>0.001,
+                                paste("=",allPM_art_nest1_pairwise$`Ambient - Foliar`[i]),
+                                " < 0.001"))) +
+    geom_text(data = summary,
+      aes(label = letter, y = upper), position = position_dodge(width = 0.3), hjust=0.5, vjust=-0.5, size = 6, fontface = "bold") +
+    theme(plot.title = element_text(size=25),
+          legend.position = "right",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = "black"),
+          aspect.ratio = 1,
+          axis.text.x = element_text(color = "black", size=15),
+          axis.title.x = element_text(color = "black", size=15),
+          axis.text.y = element_text(color = "black", size=15),
+          axis.title.y = element_text(color = "black", size=15)) +
+    scale_y_continuous(
+    labels = label_number(accuracy = 0.01)) +
+    ylim((min(summary$lower)-((max(summary$upper)-min(summary$lower))*0.1)),
+         (max(summary$upper)+(max(summary$upper)-min(summary$lower))*0.1))+
+    theme(legend.position = "none")
+
+# creating a version without the text annotation to add to a multipanel figure
+  
+  fig_nocap <- ggplot(data=summary, aes(x=particle_source, y=perc_comp, col=particle_source)) +
+    scale_color_manual(values = c("#B7C9E2", "darkgreen")) +
+    geom_point(position = position_dodge(width = 0.3), size = 3) +
+    geom_errorbar(aes(ymin = lower, ymax = upper),
+                  width = 0.2,
+                  linewidth = 1.2,
+                  position = position_dodge(width = 0.3)) +
+    labs(title = "",
+         x = "", 
+         y = paste("%", element)) +
+    theme_minimal() + 
+    geom_text(data = summary,
+      aes(label = letter, y = upper), position = position_dodge(width = 0.3), hjust=0.5, vjust=-0.7, size = 3, fontface = "bold") +
+    theme(plot.title = element_text(size=25),
+          legend.position = "right",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = "black"),
+          aspect.ratio = 1,
+          axis.text.x = element_text(color = "black", size=10),
+          axis.title.x = element_text(color = "black", size=15),
+          axis.text.y = element_text(color = "black", size=10),
+          axis.title.y = element_text(color = "black", size=10)) +
+    guides(color = guide_legend(title = "Particle Source")) +
+    scale_y_continuous(
+    labels = label_number(accuracy = 0.01)) +
+    ylim((min(summary$lower)-((max(summary$upper)-min(summary$lower))*0.1)),
+         (max(summary$upper)+(max(summary$upper)-min(summary$lower))*0.1))+
+    theme(legend.position="none")
+  
+  all_element_cat_list_median[[element]] <- fig  # Store each figure in the list we made
+  all_element_cat_list_median_nocap[[element]] <- fig_nocap
+  
+  # printing figure
+  ggsave(paste(element,"all_cat.png"), plot = fig, path = file.path(figures_dir,"Elements/Ambient vs. Foliar/Medians"), width = 5,
+    height = 5, bg = "white")
+  }
+
+```
+
+#### Combining Them
+```{r}
+
+for (i in c(1:26)) {
+  element <- element_names[i]
+  
+  # putting both the ambient + foliar figures by distance to Boston together
+    dist_fig <- plot_grid(ambient_element_urbcatxdfe_medians_list_nest1_dist[[element]],
+                     foliar_element_urbcatxdfe_medians_list_nest1_dist[[element]],
+                      labels=NULL,ncol=2)
+    dist_fig <- plot_grid(dist_fig,
+                          ggdraw() + draw_label(
+                            label = "by Distance to Boston",
+                            size = 12,
+                            x = 0.5,
+                            hjust = 0.5
+                            ),
+                          ncol = 1,
+                          rel_heights = c(1, 0.08)
+                          )
+    
+    # putting both the ambient + foliar figures by %ISA together
+    isa_fig <- plot_grid(ambient_element_urbcatxdfe_medians_list_nest1_isa[[element]],
+                     foliar_element_urbcatxdfe_medians_list_nest1_isa[[element]],
+                      labels=NULL,ncol=2)
+    isa_fig <- plot_grid(isa_fig,
+                          ggdraw() + draw_label(
+                            "by %ISA",
+                            size = 12,
+                            x = 0.5,
+                            hjust = 0.5
+                            ),
+                          ncol = 1,
+                          rel_heights = c(1, 0.08))
+    
+ # putting both the dist + ISA figures together + adding legend
+    
+  fig <- plot_grid(isa_fig,
+                   dist_fig,
+                   ncol = 1,
+                   labels=NULL)
+ 
+  fig <- plot_grid(fig, 
+                   legendopen,
+                   rel_widths = c(1, 0.3),
+                   labels=NULL,ncol=2)
+  
+  # adding the ambient vs foliar figure
+  
+  Avf_fig <- all_element_cat_list_median_nocap[[element]]
+  
+  fig <- ggdraw(fig) + 
+    draw_plot(Avf_fig,
+            x = 0.67,   # horizontal position (0 = left, 1 = right)
+            y = 0.01,  # vertical position (0 = bottom, 1 = top)
+            width = 0.35,
+            height = 0.35)
+  
+  
+  
+  # making labels for the Ambient v Foliar p-values to append. i'm using the ART values because they were the same as the K-W values
+  
+  label <- paste0("Ambient vs. Foliar: p ",
+                      ifelse(allPM_art_nest1_pairwise$`Ambient - Foliar`[allPM_art_nest1_pairwise$Element==element]>0.001,
+                             paste(" =",allPM_art_nest1_pairwise$`Ambient - Foliar`[allPM_art_nest1_pairwise$Element==element]),
+                             " < 0.001"))
+  
+  # putting them all together
+  
+  fig <- ggdraw(fig) +
+    draw_label(label,
+    x = 0.96, y = 0.32,
+    hjust = 1,
+    size = 9)
+    
+ggsave(paste(element,"_urbcatxdfe.png"), plot = fig, width = 9, path = file.path(figures_dir,"Elements/Urban vs. Rural/Medians"),
+  height = 8, bg = "white")
+}
+    
+```
+
 ### Plotting Individual Sites
 #### Foliar
 ```{r}
@@ -8380,6 +9128,7 @@ figX <- plot_grid(panelA, panelB,
 # printing figure
 ggsave("figX.png", plot = figX, path = file.path(figures_dir,"For Pub"), width = 12,
   height = 10, bg = "white")
+
 
 ```
 
