@@ -21,6 +21,7 @@ stderr <- function(x) {
 
 ci95_median_boot <- function(x, conf = 0.95, R = 5000, na.rm = TRUE) {
   if (na.rm) x <- x[!is.na(x)]
+  if (length(x) == 0) return(c(median = NA_real_, lower = NA_real_, upper = NA_real_))
   boot_medians <- replicate(R, median(sample(x, replace = TRUE)))
   alpha <- 1 - conf
   lower <- quantile(boot_medians, alpha / 2)
