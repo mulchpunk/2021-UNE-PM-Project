@@ -1,4 +1,4 @@
----
+1---
 title: "2021_UNE_LeafSEM"
 output:
   html_document: default
@@ -33,7 +33,7 @@ library(recolorize) # to read in the legend
 library(rcompanion)
 
 # === FILE PATHS (update these if running on another machine) ===
-repo_root   <- "/Users/emmadaily/2021 UNE PM Project"
+repo_root   <- "/Users/emmadaily/2021_UNE_PM_Project"
 dropbox     <- "/Users/emmadaily/BOSTON UNIVERSITY Dropbox/Emma Daily/Lab Files/Projects/UNE/Particulate Matter Project/Daily PM Analysis/RCode"
 project     <- file.path(dropbox, "LeafSEM")
 data_dir    <- file.path(project, "csvs")
@@ -521,9 +521,410 @@ for (i in 1:13) {
         height = 4, bg = "white")
 }    
 ```
+## Testing LME Models
+### Testing Models
+#### Site as a Random Effect
+##### Parametric ANOVA
+```{r}
+
+v <- leaf_vars_norm[7] # change number here to change which variable is being tested
+
+# Fitting LME models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
+fit_dfe <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name)")), # site as random effect
+                data = leafSEM_normal)
+fit_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")), 
+                data = leafSEM_normal)
+fit_int_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")), 
+                    data = leafSEM_normal)
+fit_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")), 
+                data = leafSEM_normal)
+fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")), 
+                    data = leafSEM_normal)
+
+# ANOVA p-values for fixed effects
+anova_isa <- anova(fit_int_isa) # change the model name to see the ANOVA output
+
+# checking between-site variance
+    
+    site_variance <- sapply(leaf_vars_norm[1:13], function(v) {
+      
+      # Skip if all values are NA
+      if (all(is.na(leafSEM_normal[[v]]))) return(NA)
+      
+      fit <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+                  data = leafSEM_normal, REML = TRUE)
+      as.data.frame(VarCorr(fit))$vcov[1]
+    })
+    
+    data.frame(variable = leaf_vars_norm[1:13], site_variance = site_variance)
+
+# checking for singular fits across all 5 model forms, per variable
+
+parametric_singular_fit_nest1 <- data.frame(
+  variable = character(), Singular_dfe = logical(), Singular_isa = logical(),
+  Singular_int_isa = logical(), Singular_dist = logical(), Singular_int_dist = logical(),
+  Any_Singular = logical()
+)
+
+for (v in leaf_vars_norm[1:13]) {
+  y <- leafSEM_normal[[v]]
+  if (all(is.na(y))) {
+    parametric_singular_fit_nest1 <- rbind(parametric_singular_fit_nest1, data.frame(
+      variable = v, Singular_dfe = NA, Singular_isa = NA,
+      Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA))
+    next
+  }
+
+  result <- tryCatch({
+    fit_dfe      <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name)")), data = leafSEM_normal)
+    fit_isa      <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")), data = leafSEM_normal)
+    fit_int_isa  <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")), data = leafSEM_normal)
+    fit_dist     <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")), data = leafSEM_normal)
+    fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")), data = leafSEM_normal)
+
+    row <- data.frame(
+      variable = v,
+      Singular_dfe      = isSingular(fit_dfe),
+      Singular_isa      = isSingular(fit_isa),
+      Singular_int_isa  = isSingular(fit_int_isa),
+      Singular_dist     = isSingular(fit_dist),
+      Singular_int_dist = isSingular(fit_int_dist)
+    )
+    row$Any_Singular <- any(unlist(row[-1]))
+    row
+  }, error = function(e) {
+    message("Failed for variable: ", v, " — ", e$message)
+    data.frame(variable = v, Singular_dfe = NA, Singular_isa = NA,
+               Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA)
+  })
+
+  parametric_singular_fit_nest1 <- rbind(parametric_singular_fit_nest1, result)
+}
+
+```
+
+##### Non-parametric ANOVA
+```{r}
+
+v <- leaf_vars_unt[13] # change number here to change which variable is being tested
+
+# Fitting ART models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
+art_dfe      <- art(as.formula(paste(v, "~ dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_isa      <- art(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_int_isa  <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_dist     <- art(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_int_dist <- art(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+
+# ANOVA-style F-tests for fixed effects
+anova_isa <- anova(art_int_isa) # change model name to see ANOVA output
+
+# checking between-site variance
+site_variance <- sapply(leaf_vars_unt[1:13], function(v) {
+  
+  if (all(is.na(leafSEM_unt[[v]]))) return(NA)
+  
+  m <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+           data = leafSEM_unt)
+  
+  fit <- artlm(m, "urb_cat_isa:dfe") # lmer fit on the aligned ranks for this term
+  as.data.frame(VarCorr(fit))$vcov[1]
+})
+
+data.frame(variable = leaf_vars_unt[1:13], site_variance = site_variance)
+
+# checking for singular fits across all 5 model forms, per variable
+
+nonparametric_singular_fit_nest1 <- data.frame(
+  variable = character(), Singular_dfe = logical(), Singular_isa = logical(),
+  Singular_int_isa = logical(), Singular_dist = logical(), Singular_int_dist = logical(),
+  Any_Singular = logical()
+)
+
+for (v in leaf_vars_unt[1:13]) {
+  y <- leafSEM_unt[[v]]
+  if (all(is.na(y))) {
+    nonparametric_singular_fit_nest1 <- rbind(nonparametric_singular_fit_nest1, data.frame(
+      variable = v, Singular_dfe = NA, Singular_isa = NA,
+      Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA))
+    next
+  }
+
+  result <- tryCatch({
+    art_dfe      <- art(as.formula(paste(v, "~ dfe + (1 | site_name)")), data = leafSEM_unt)
+    art_isa      <- art(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")), data = leafSEM_unt)
+    art_int_isa  <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")), data = leafSEM_unt)
+    art_dist     <- art(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")), data = leafSEM_unt)
+    art_int_dist <- art(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")), data = leafSEM_unt)
+
+    row <- data.frame(
+      variable = v,
+      Singular_dfe      = isSingular(artlm(art_dfe, "dfe")),
+      Singular_isa      = isSingular(artlm(art_isa, "urb_cat_isa")),
+      Singular_int_isa  = isSingular(artlm(art_int_isa, "urb_cat_isa:dfe")),
+      Singular_dist     = isSingular(artlm(art_dist, "urb_cat_dist")),
+      Singular_int_dist = isSingular(artlm(art_int_dist, "urb_cat_dist:dfe"))
+    )
+    row$Any_Singular <- any(unlist(row[-1]))
+    row
+  }, error = function(e) {
+    message("Failed for variable: ", v, " — ", e$message)
+    data.frame(variable = v, Singular_dfe = NA, Singular_isa = NA,
+               Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA)
+  })
+
+  nonparametric_singular_fit_nest1 <- rbind(nonparametric_singular_fit_nest1, result)
+}
+
+```
+
+#### Tree Nested Within Site
+##### Parametric ANOVA
+```{r}
+
+v <- leaf_vars_norm[7] # change number here to change which variable is being tested
+
+# Fitting LME models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
+fit_dfe <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name/tree)")), # tree nested within site
+                data = leafSEM_normal)
+fit_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name/tree)")), 
+                data = leafSEM_normal)
+fit_int_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")), 
+                    data = leafSEM_normal)
+fit_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name/tree)")), 
+                data = leafSEM_normal)
+fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name/tree)")), 
+                    data = leafSEM_normal)
+
+# ANOVA p-values for fixed effects
+anova_isa <- anova(fit_int_isa) # change the model name to see the ANOVA output
+
+# checking between-site variance
+    
+    site_variance <- sapply(leaf_vars_norm[1:13], function(v) {
+      
+      # Skip if all values are NA
+      if (all(is.na(leafSEM_normal[[v]]))) return(NA)
+      
+      fit <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")),
+                  data = leafSEM_normal, REML = TRUE)
+      as.data.frame(VarCorr(fit))$vcov[1]
+    })
+    
+    data.frame(variable = leaf_vars_norm[1:13], site_variance = site_variance)
+
+# checking for singular fits across all 5 model forms, per variable
+
+parametric_singular_fit_nest2 <- data.frame(
+  variable = character(), Singular_dfe = logical(), Singular_isa = logical(),
+  Singular_int_isa = logical(), Singular_dist = logical(), Singular_int_dist = logical(),
+  Any_Singular = logical()
+)
+
+for (v in leaf_vars_norm[1:13]) {
+  y <- leafSEM_normal[[v]]
+  if (all(is.na(y))) {
+    parametric_singular_fit_nest2 <- rbind(parametric_singular_fit_nest2, data.frame(
+      variable = v, Singular_dfe = NA, Singular_isa = NA,
+      Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA))
+    next
+  }
+
+  result <- tryCatch({
+    fit_dfe      <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name/tree)")), data = leafSEM_normal)
+    fit_isa      <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name/tree)")), data = leafSEM_normal)
+    fit_int_isa  <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")), data = leafSEM_normal)
+    fit_dist     <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name/tree)")), data = leafSEM_normal)
+    fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name/tree)")), data = leafSEM_normal)
+
+    row <- data.frame(
+      variable = v,
+      Singular_dfe      = isSingular(fit_dfe),
+      Singular_isa      = isSingular(fit_isa),
+      Singular_int_isa  = isSingular(fit_int_isa),
+      Singular_dist     = isSingular(fit_dist),
+      Singular_int_dist = isSingular(fit_int_dist)
+    )
+    row$Any_Singular <- any(unlist(row[-1]))
+    row
+  }, error = function(e) {
+    message("Failed for variable: ", v, " — ", e$message)
+    data.frame(variable = v, Singular_dfe = NA, Singular_isa = NA,
+               Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA)
+  })
+
+  parametric_singular_fit_nest2 <- rbind(parametric_singular_fit_nest2, result)
+}
+
+```
+
+##### Non-parametric ANOVA
+```{r}
+
+v <- leaf_vars_unt[13] # change number here to change which variable is being tested
+
+# Fitting ART models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
+art_dfe      <- art(as.formula(paste(v, "~ dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_isa      <- art(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_int_isa  <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_dist     <- art(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")),
+                     data = leafSEM_unt)
+art_int_dist <- art(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")),
+                     data = leafSEM_unt)
+
+# ANOVA-style F-tests for fixed effects
+anova_isa <- anova(art_int_isa) # change model name to see ANOVA output
+
+# checking between-site variance
+site_variance <- sapply(leaf_vars_unt[1:13], function(v) {
+  
+  if (all(is.na(leafSEM_unt[[v]]))) return(NA)
+  
+  m <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
+           data = leafSEM_unt)
+  
+  fit <- artlm(m, "urb_cat_isa:dfe") # lmer fit on the aligned ranks for this term
+  as.data.frame(VarCorr(fit))$vcov[1]
+})
+
+data.frame(variable = leaf_vars_unt[1:13], site_variance = site_variance)
+
+# checking for singular fits across all 5 model forms, per variable
+
+nonparametric_singular_fit_nest2 <- data.frame(
+  variable = character(), Singular_dfe = logical(), Singular_isa = logical(),
+  Singular_int_isa = logical(), Singular_dist = logical(), Singular_int_dist = logical(),
+  Any_Singular = logical()
+)
+
+for (v in leaf_vars_unt[1:13]) {
+  y <- leafSEM_unt[[v]]
+  if (all(is.na(y))) {
+    nonparametric_singular_fit_nest2 <- rbind(nonparametric_singular_fit_nest2, data.frame(
+      variable = v, Singular_dfe = NA, Singular_isa = NA,
+      Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA))
+    next
+  }
+
+  result <- tryCatch({
+    art_dfe      <- art(as.formula(paste(v, "~ dfe + (1 | site_name)")), data = leafSEM_unt)
+    art_isa      <- art(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")), data = leafSEM_unt)
+    art_int_isa  <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")), data = leafSEM_unt)
+    art_dist     <- art(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")), data = leafSEM_unt)
+    art_int_dist <- art(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")), data = leafSEM_unt)
+
+    row <- data.frame(
+      variable = v,
+      Singular_dfe      = isSingular(artlm(art_dfe, "dfe")),
+      Singular_isa      = isSingular(artlm(art_isa, "urb_cat_isa")),
+      Singular_int_isa  = isSingular(artlm(art_int_isa, "urb_cat_isa:dfe")),
+      Singular_dist     = isSingular(artlm(art_dist, "urb_cat_dist")),
+      Singular_int_dist = isSingular(artlm(art_int_dist, "urb_cat_dist:dfe"))
+    )
+    row$Any_Singular <- any(unlist(row[-1]))
+    row
+  }, error = function(e) {
+    message("Failed for variable: ", v, " — ", e$message)
+    data.frame(variable = v, Singular_dfe = NA, Singular_isa = NA,
+               Singular_int_isa = NA, Singular_dist = NA, Singular_int_dist = NA, Any_Singular = NA)
+  })
+
+  nonparametric_singular_fit_nest2 <- rbind(nonparametric_singular_fit_nest2, result)
+}
+
+```
+
+#### ANOVA Table (Site as Random Effect, Non-Singular Variables)
+```{r}
+# only run the ANOVA for variables parametric_singular_fit_nest1 already
+# confirmed are not singular for any of the 5 model forms
+nonsingular_vars <- parametric_singular_fit_nest1$variable[
+  which(parametric_singular_fit_nest1$Any_Singular == FALSE)
+]
+
+ANOVA_nest1 <- data.frame(
+  variable = character(),
+  dfe = numeric(), urb_cat_isa = numeric(), int_isa = numeric(),
+  urb_cat_dist = numeric(), int_dist = numeric(),
+  stringsAsFactors = FALSE
+)
+
+for (v in nonsingular_vars) {
+
+  result <- tryCatch({
+    fit_dfe      <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name)")), data = leafSEM_normal)
+    fit_isa      <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")), data = leafSEM_normal)
+    fit_int_isa  <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")), data = leafSEM_normal)
+    fit_dist     <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")), data = leafSEM_normal)
+    fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")), data = leafSEM_normal)
+
+    p_dfe      <- anova(fit_dfe)$`Pr(>F)`[1]
+    p_isa      <- anova(fit_isa)$`Pr(>F)`[1]
+    p_int_isa  <- anova(fit_int_isa)$`Pr(>F)`[3]
+    p_dist     <- anova(fit_dist)$`Pr(>F)`[1]
+    p_int_dist <- anova(fit_int_dist)$`Pr(>F)`[3]
+
+    # --- post-hoc for the urb_cat_dist x dfe interaction model ---
+    pw_dist <- as.data.frame(pairs(emmeans(fit_int_dist, ~ urb_cat_dist * dfe), adjust = "tukey"))
+    # remove.zero = FALSE is essential: cldList()'s default strips every "0"
+    # character out of group labels, which would silently break the
+    # name-based matching below (see the same fix applied in PMComp.Rmd)
+    letters_dist <- cldList(p.value ~ contrast, data = pw_dist, threshold = 0.05, remove.zero = FALSE)
+
+    # --- post-hoc for the urb_cat_isa x dfe interaction model ---
+    pw_isa <- as.data.frame(pairs(emmeans(fit_int_isa, ~ urb_cat_isa * dfe), adjust = "tukey"))
+    letters_isa <- cldList(p.value ~ contrast, data = pw_isa, threshold = 0.05, remove.zero = FALSE)
+
+    # --- simple urb_cat_isa-only post-hoc (2 levels) - mirrors the original
+    #     "Parametric ANOVA" chunk exactly: it only ever ran this simple
+    #     comparison for isa, never for dist
+    pw_isa_simple <- as.data.frame(pairs(emmeans(fit_isa, ~ urb_cat_isa), adjust = "tukey"))
+    p_Urban_Rural_isa <- pw_isa_simple$p.value[1]
+    letters_isa_simple <- cldList(p.value ~ contrast, data = pw_isa_simple, threshold = 0.05, remove.zero = FALSE)
+
+    row <- data.frame(
+      variable = v, dfe = p_dfe, urb_cat_isa = p_isa, int_isa = p_int_isa,
+      urb_cat_dist = p_dist, int_dist = p_int_dist,
+      Urban_Rural_isa = p_Urban_Rural_isa
+    )
+
+    # attach pairwise p-values and letters by matching the actual contrast/group
+    # text emmeans returned, rather than assuming a fixed order. "_dist"/"_isa"
+    # suffixes are required: urb_cat_dist and urb_cat_isa share the same level
+    # labels ("Rural"/"Urban"), so their contrast/group text is identical and
+    # would otherwise collide into the same columns
+    for (i in seq_len(nrow(pw_dist)))      row[[paste0(gsub(" ", "_", pw_dist$contrast[i]), "_dist")]]      <- pw_dist$p.value[i]
+    for (i in seq_len(nrow(letters_dist))) row[[paste0(gsub(" ", "_", letters_dist$Group[i]), "_dist")]]     <- letters_dist$Letter[i]
+    for (i in seq_len(nrow(pw_isa)))       row[[paste0(gsub(" ", "_", pw_isa$contrast[i]), "_isa")]]        <- pw_isa$p.value[i]
+    for (i in seq_len(nrow(letters_isa)))  row[[paste0(gsub(" ", "_", letters_isa$Group[i]), "_isa")]]      <- letters_isa$Letter[i]
+    row$Rural_isa <- letters_isa_simple$Letter[letters_isa_simple$Group == "Rural"]
+    row$Urban_isa <- letters_isa_simple$Letter[letters_isa_simple$Group == "Urban"]
+
+    row
+  }, error = function(e) {
+    message("Failed for variable: ", v, " — ", e$message)
+    data.frame(variable = v, dfe = NA, urb_cat_isa = NA, int_isa = NA, urb_cat_dist = NA, int_dist = NA)
+  })
+
+  ANOVA_nest1 <- rbind(ANOVA_nest1, result)
+}
+
+ANOVA_nest1 <- lapply(ANOVA_nest1, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+ANOVA_nest1 <- as.data.frame(ANOVA_nest1)
+
+ANOVA_nest1
+```
+
 ## Parametric Analyses
 ### Parametric ANOVA
-```{r, eval =FALSE}
+```{r}
 
 ###### Loop for parametric ANOVAs
 
@@ -733,83 +1134,13 @@ for (i in 1:13) {
 
 ```  
     
-### LME with Nesting
-#### Tree Nested Within Site
-#### Parametric ANOVA
-```{r}
-
-v <- leaf_vars_norm[7] # change number here to change which variable is being tested
-
-# Fitting LME models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
-fit_dfe <- lmer(as.formula(paste(v, "~ dfe + (1 | site_name/tree)")), # tree nested within site
-                data = leafSEM_normal)
-fit_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name/tree)")), 
-                data = leafSEM_normal)
-fit_int_isa <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")), 
-                    data = leafSEM_normal)
-fit_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name/tree)")), 
-                data = leafSEM_normal)
-fit_int_dist <- lmer(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name/tree)")), 
-                    data = leafSEM_normal)
-
-# ANOVA-style p-values for fixed effects
-anova_isa <- anova(fit_int_isa) # change the model name to see the ANOVA output
-
-# checking between-site variance
-    
-    site_variance <- sapply(leaf_vars_norm[1:13], function(v) {
-      
-      # Skip if all values are NA
-      if (all(is.na(leafSEM_normal[[v]]))) return(NA)
-      
-      fit <- lmer(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name/tree)")),
-                  data = leafSEM_normal, REML = TRUE)
-      as.data.frame(VarCorr(fit))$vcov[1]
-    })
-    
-    data.frame(variable = leaf_vars_norm[1:13], site_variance = site_variance)
-
-```
-
-#### Non-parametric ANOVA
-```{r}
-library(ARTool)
-
-v <- leaf_vars_unt[13] # change number here to change which variable is being tested
-
-# Fitting ART models for dfe, urb_cat_isa, urb_cat_dist, and the interactions
-art_dfe      <- art(as.formula(paste(v, "~ dfe + (1 | site_name)")),
-                     data = leafSEM_unt)
-art_isa      <- art(as.formula(paste(v, "~ urb_cat_isa + (1 | site_name)")),
-                     data = leafSEM_unt)
-art_int_isa  <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
-                     data = leafSEM_unt)
-art_dist     <- art(as.formula(paste(v, "~ urb_cat_dist + (1 | site_name)")),
-                     data = leafSEM_unt)
-art_int_dist <- art(as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)")),
-                     data = leafSEM_unt)
-
-# ANOVA-style F-tests for fixed effects
-anova_isa <- anova(art_int_isa) # change model name to see ANOVA output
-
-# checking between-site variance
-site_variance <- sapply(leaf_vars_unt[1:13], function(v) {
-  
-  if (all(is.na(leafSEM_unt[[v]]))) return(NA)
-  
-  m <- art(as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)")),
-           data = leafSEM_unt)
-  
-  fit <- artlm(m, "urb_cat_isa:dfe") # lmer fit on the aligned ranks for this term
-  as.data.frame(VarCorr(fit))$vcov[1]
-})
-
-data.frame(variable = leaf_vars_norm[1:13], site_variance = site_variance)
-```
 
 ### Loop for Figures (Means)
 ```{r}
-    
+
+LeafSEM_ANOVA_ISA <- list()
+LeafSEM_ANOVA <- list()
+
 for (i in 1:13) {
   
     # defining variables
@@ -1030,7 +1361,243 @@ for (i in 1:13) {
         height = 4, bg = "white")
 }    
 ```
-### Loop for Figures (Medians)
+
+### Loop for Figures (Means with Nested Model)
+```{r}
+
+# making a list of the 3 variables that support the nested model
+
+nestables_unt <- leaf_vars_unt[c(6,7,11)]
+nestables_norm <- leaf_vars_norm[c(6,7,11)]
+
+LeafSEM_ANOVA_nest1  <- list()
+LeafSEM_ANOVA_nest1_ISA <-list()
+    
+for (i in c(1:3)) { # these are the variables that can support the nested model
+  
+    # defining variables
+    leaf_var_unt <- nestables_unt[i]
+    leaf_var_norm <- nestables_norm[i]
+    varlabel <- leafSEMnames[[leaf_var_unt]]
+    
+    
+  # Figures
+    
+   # Distance to Boston 
+
+    sum_dist <- data_summary(data = LeafSEM_resp_varsxUNESites,
+                            varname = leaf_var_unt,
+                            groupnames = c("urb_cat_dist", "dfe"))
+    
+    fig_dist <-
+      ggplot(data=sum_dist,mapping=aes(x=urb_cat_dist,y=!!sym(leaf_var_unt),col=dfe)) +
+      scale_color_manual(values = c("grey","black")) +
+      geom_point(position = position_dodge(width = 0.3), size = 3) +
+      geom_errorbar(aes(ymin = !!sym(leaf_var_unt) - se, ymax = !!sym(leaf_var_unt) + se), 
+                    width = 0.2, 
+                    position = position_dodge(width = 0.3)) +
+      labs(title = "",
+           x = "Site Type by Distance to Boston", 
+           y = varlabel) +
+      ylim(0,(1.45*(max(sum_dist[,3])+max(sum_dist$se)))) +
+      theme_minimal() +   
+      theme(legend.position="none") +
+      guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            axis.line = element_line(color = "black"),
+            aspect.ratio = 1,
+            axis.text.x = element_text(color = "black", size = 15),
+            axis.text.y = element_text(color = "black", size = 15),
+            axis.title.x = element_text(color = "black", size = 15),
+            axis.title.y = element_text(color = "black", size = 15))
+    
+    # %ISA 
+    
+    sum_isa <- data_summary(LeafSEM_resp_varsxUNESites,
+                                 varname = leaf_var_unt,
+                                groupnames = c("urb_cat_isa", "dfe"))
+    
+    fig_isa <-
+      ggplot(data=sum_isa,mapping=aes(x=urb_cat_isa,y=!!sym(leaf_var_unt),col=dfe)) +
+      scale_color_manual(values = c("grey","black")) +
+      geom_point(position = position_dodge(width = 0.3), size = 3) +
+      geom_errorbar(aes(ymin = !!sym(leaf_var_unt) - se, ymax = !!sym(leaf_var_unt) + se), 
+                    width = 0.2, 
+                    position = position_dodge(width = 0.3)) +
+      labs(title = "",
+           x = "Site Type by % Impervious Surface Area", 
+           y = varlabel) +
+      theme_minimal() +
+      ylim(0,(1.45*(max(sum_isa[,3])+max(sum_isa$se)))) +
+      theme(legend.position="none") +
+      guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            axis.line = element_line(color = "black"),
+            aspect.ratio = 1,
+            axis.text.x = element_text(color = "black", size = 15),
+            axis.text.y = element_text(color = "black", size = 15),
+            axis.title.x = element_text(color = "black", size = 15),
+            axis.title.y = element_text(color = "black", size = 15))
+  
+    
+# adding a figure annotation with the anova summary statistics
+
+    if (all(is.na(leafSEM_normal[[leaf_var_norm]]) ) == "FALSE") {
+      
+    # p values
+      
+      EvI_dist_p <- ANOVA_nest1$dfe[i]
+      UvR_dist_p <- ANOVA_nest1$urb_cat_dist[i]
+      inx_dist_p <- ANOVA_nest1$int_dist[i]
+        
+      EvI_isa_p <- ANOVA_nest1$dfe[i]
+      UvR_isa_p <- ANOVA_nest1$urb_cat_isa[i]
+      inx_isa_p <- ANOVA_nest1$int_isa[i]
+      
+    # labels 
+      
+      EvI_dist_p_lab <- if (EvI_dist_p <= 0.001) "p < 0.001" else EvI_dist_p
+      UvR_dist_p_lab <- if (UvR_dist_p <= 0.001) "p < 0.001" else UvR_dist_p
+      inx_dist_p_lab <- if (inx_dist_p <= 0.001) "p < 0.001" else inx_dist_p
+      
+      EvI_isa_p_lab <- if (EvI_isa_p <= 0.001) "p < 0.001" else EvI_isa_p
+      UvR_isa_p_lab <- if (UvR_isa_p <= 0.001) "p < 0.001" else UvR_isa_p
+      inx_isa_p_lab <- if (inx_isa_p <= 0.001) "p < 0.001" else inx_isa_p
+      
+      label_text_dist <- paste0(
+        
+        "Edge vs. Interior: p = ", EvI_dist_p_lab, "\n",
+        "Urban vs. Rural: p = ", UvR_dist_p_lab, "\n",
+        "Interaction: p = ", inx_dist_p_lab, "\n"
+      )
+      
+      label_text_isa <- paste0(
+        
+        "Edge vs. Interior: p = ", EvI_isa_p_lab, "\n",
+        "Urban vs. Rural: p = ", UvR_isa_p_lab, "\n",
+        "Interaction: p = ", inx_isa_p_lab, "\n"
+      )
+      
+     # calculating label position
+        y_max_dist <- max(sum_dist[,3])+max(sum_dist$se)
+        text_pos_y_dist <- y_max_dist + 0.25 * (y_max_dist)
+        
+        y_max_isa <- max(sum_isa[,3])+max(sum_isa$se)
+        text_pos_y_isa <- y_max_isa + 0.25 * (y_max_isa)
+        
+     # letters
+        
+      # add in the significance letter associated with each group
+          # NOTE: sum_dist's row order from data_summary() is Urban,0 / Urban,90 /
+          # Rural,0 / Rural,90 (verified against real data) - the previous version
+          # of this code had Rural/Urban swapped relative to that row order
+          sum_dist$letter <- NA
+          sum_dist$letter[1] <- ANOVA_nest1$Urbandfe0_dist[i]
+          sum_dist$letter[2] <- ANOVA_nest1$Urbandfe90_dist[i]
+          sum_dist$letter[3] <- ANOVA_nest1$Ruraldfe0_dist[i]
+          sum_dist$letter[4] <- ANOVA_nest1$Ruraldfe90_dist[i]
+
+          sum_isa$letter <- NA
+          sum_isa$letter[1] <- ANOVA_nest1$Urbandfe0_isa[i]
+          sum_isa$letter[2] <- ANOVA_nest1$Urbandfe90_isa[i]
+          sum_isa$letter[3] <- ANOVA_nest1$Ruraldfe0_isa[i]
+          sum_isa$letter[4] <- ANOVA_nest1$Ruraldfe90_isa[i]
+          
+      # add in maximum for y axis in each group (for positioning letter)
+          sum_dist$max <- NA
+          sum_dist$max[1] <- sum_dist[1,3]+sum_dist$se[1]+(max(sum_dist[1,3]))*0.01
+          sum_dist$max[2] <- sum_dist[2,3]+sum_dist$se[2]+(max(sum_dist[2,3]))*0.01
+          sum_dist$max[3] <- sum_dist[3,3]+sum_dist$se[3]+(max(sum_dist[3,3]))*0.01
+          sum_dist$max[4] <- sum_dist[4,3]+sum_dist$se[4]+(max(sum_dist[4,3]))*0.01
+          
+          sum_isa$max <- NA
+          sum_isa$max[1] <- sum_isa[1,3]+sum_isa$se[1]+(max(sum_isa[1,3]))*0.01
+          sum_isa$max[2] <- sum_isa[2,3]+sum_isa$se[2]+(max(sum_isa[2,3]))*0.01
+          sum_isa$max[3] <- sum_isa[3,3]+sum_isa$se[3]+(max(sum_isa[3,3]))*0.01
+          sum_isa$max[4] <- sum_isa[4,3]+sum_isa$se[4]+(max(sum_isa[4,3]))*0.01
+        
+     # figure annotation
+      fig_dist <- fig_dist +
+          annotate(
+            geom = "text",
+            y = Inf,
+            x = 0.5,
+            hjust=0,
+            vjust=1,
+            label = label_text_dist,
+            size = 3
+          ) +
+        geom_text(data = sum_dist,
+                  aes(label = letter, y = max), 
+                  position = position_dodge(width = 0.3), hjust=0.5, vjust=0, size = 5, fontface = "bold")
+      
+      
+      fig_isa <- fig_isa +
+          annotate(
+            geom = "text",
+            y = Inf,
+            x = 0.5,
+            hjust=0,
+            vjust=1,
+            label = label_text_isa,
+            size = 3
+          ) +
+        geom_text(data = sum_isa,
+                  aes(label = letter, y = max), 
+                  position = position_dodge(width = 0.3), hjust=0.5, vjust=0, size = 5, fontface = "bold")
+    }
+    
+    if (all(is.na(leafSEM_normal[[leaf_var_norm]]) ) == "TRUE") {
+      
+      null_label <- paste0("data not normal after any transformation,\nno parametric statistics calculated")
+      
+        y_max_dist <- max(sum_dist[,3])+max(sum_dist$se)
+        text_pos_y_dist <- y_max_dist + 0.25 * (y_max_dist)
+        
+        y_max_isa <- max(sum_isa[,3])+max(sum_isa$se)
+        text_pos_y_isa <- y_max_isa + 0.25 * (y_max_isa)
+      
+    # figure annotation
+      fig_dist <- fig_dist +
+          annotate(
+            geom = "text",
+            y = Inf,
+            x = 0.5,
+            hjust=0,
+            vjust=1,
+            label = null_label,
+            size = 4
+          ) 
+      
+      fig_isa <- fig_isa +
+          annotate(
+            geom = "text",
+            y = Inf,
+            x = 0.5,
+            hjust=0,
+            vjust=1,
+            label = null_label,
+            size = 4
+          ) 
+      
+    }
+    
+    
+  # Printing
+      figs <- plot_grid(fig_dist,fig_isa,legend,labels=NULL,ncol=3,rel_widths=c(1,1,0.3))
+      
+      LeafSEM_ANOVA_nest1[[leaf_var_unt]] <- figs
+      LeafSEM_ANOVA_nest1_ISA[[leaf_var_unt]] <- fig_isa
+      
+      # printing figure
+      ggsave(paste(leaf_var_unt,"_cat.png"), plot = figs, path = file.path(figures_dir,"Categorical/Parametric ANOVA"), width = 9,
+        height = 4, bg = "white")
+}    
+```
+
+### Loop for Figures (Medians jittered)
 ```{r}
 
 LeafSEM_ANOVA_ISA_jit <- list()
@@ -1477,6 +2044,168 @@ for (i in 1:13) {
     # rounding the p-values to two decimal places
     ART_ANOVA <- lapply(ART_ANOVA, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
     ART_ANOVA <- as.data.frame(ART_ANOVA)
+```
+
+### Aligned-Ranks Transformation ANOVA loop (Site as Random Effect)
+```{r}
+# only run the ART ANOVA for variables nonparametric_singular_fit_nest1
+# already confirmed are not singular for any of the 5 model forms
+nonsingular_vars_art <- nonparametric_singular_fit_nest1$variable[
+  which(nonparametric_singular_fit_nest1$Any_Singular == FALSE)
+]
+
+ART_ANOVA_nest1 <- data.frame(
+  variable = character(),
+  dfe = numeric(),
+  urb_cat_isa = numeric(),
+  int_isa = numeric(),
+  urb_cat_dist = numeric(),
+  int_dist = numeric(),
+  "UrbanEdge_RuralEdge_dist" = numeric(),
+  "RuralInterior_RuralEdge_dist" = numeric(),
+  "UrbanInterior_RuralEdge_dist" = numeric(),
+  "RuralInterior_UrbanEdge_dist" = numeric(),
+  "UrbanInterior_UrbanEdge_dist" = numeric(),
+  "UrbanInterior_RuralInterior_dist" = numeric(),
+  "UrbanEdge_dist" = character(),
+  "RuralInterior_dist"= character(),
+  "UrbanInterior_dist"= character(),
+  "RuralEdge_dist"= character(),
+  "UrbanEdge_RuralEdge_isa" = numeric(),
+  "RuralInterior_RuralEdge_isa" = numeric(),
+  "UrbanInterior_RuralEdge_isa" = numeric(),
+  "RuralInterior_UrbanEdge_isa" = numeric(),
+  "UrbanInterior_UrbanEdge_isa" = numeric(),
+  "UrbanInterior_RuralInterior_isa" = numeric(),
+  "UrbanEdge_isa" = character(),
+  "RuralInterior_isa"= character(),
+  "UrbanInterior_isa"= character(),
+  "RuralEdge_isa"= character(),
+  stringsAsFactors = FALSE
+)
+
+for (v in nonsingular_vars_art) {
+
+  result <- tryCatch({
+
+    # ART_ANOVAS, now with site as a random effect
+
+    # ISA ART_ANOVA
+    formula_isa <- as.formula(paste(v, "~ urb_cat_isa * dfe + (1 | site_name)"))
+    X_ART_isa <- art(formula_isa, data = leafSEM_unt)
+    X_aovART_isa <- anova(X_ART_isa)
+
+      p_urb_cat_isa <- X_aovART_isa["urb_cat_isa","Pr(>F)"]
+      p_dfe_isa     <- X_aovART_isa["dfe","Pr(>F)"]
+      p_int_isa     <- X_aovART_isa["urb_cat_isa:dfe","Pr(>F)"]
+
+    # DIST ART_ANOVA
+    formula_dist <- as.formula(paste(v, "~ urb_cat_dist * dfe + (1 | site_name)"))
+    X_ART_dist <- art(formula_dist, data = leafSEM_unt)
+    X_aovART_dist <- anova(X_ART_dist)
+
+      p_urb_cat_dist <- X_aovART_dist["urb_cat_dist","Pr(>F)"]
+      p_dfe_dist     <- X_aovART_dist["dfe","Pr(>F)"]
+      p_int_dist     <- X_aovART_dist["urb_cat_dist:dfe","Pr(>F)"]
+
+    # Pairwise comparisons
+
+      # Distance
+      art.con_X_ART_dist <- art.con(X_ART_dist, ~ urb_cat_dist * dfe, adjust = "none")
+      art.con_X_ART_dist <- as.data.frame(art.con_X_ART_dist)
+      # remove.zero = FALSE avoids cldList()'s default of stripping every "0"
+      # character out of group labels (e.g. "Urban,0" -> "Urban,"), the same
+      # corruption already documented/fixed for this pattern in PMComp.Rmd
+      letters_dist <- cldList(
+        p.value ~ contrast,
+        data = art.con_X_ART_dist,
+        threshold = 0.05,
+        remove.zero = FALSE
+      )
+
+        p_RuralInterior_RuralEdge_dist <- art.con_X_ART_dist$p.value[1]
+        p_UrbanEdge_RuralEdge_dist <- art.con_X_ART_dist$p.value[2]
+        p_UrbanInterior_RuralEdge_dist <- art.con_X_ART_dist$p.value[3]
+        p_RuralInterior_UrbanEdge_dist <- art.con_X_ART_dist$p.value[4]
+        p_UrbanInterior_RuralInterior_dist <- art.con_X_ART_dist$p.value[5]
+        p_UrbanInterior_UrbanEdge_dist  <- art.con_X_ART_dist$p.value[6]
+
+        let_RuralEdge_dist <- letters_dist$Letter[1]
+        let_RuralInterior_dist <- letters_dist$Letter[2]
+        let_UrbanEdge_dist <- letters_dist$Letter[3]
+        let_UrbanInterior_dist <- letters_dist$Letter[4]
+
+      # ISA
+      art.con_X_ART_isa <- art.con(X_ART_isa, ~ urb_cat_isa * dfe, adjust = "none")
+      art.con_X_ART_isa <- as.data.frame(art.con_X_ART_isa)
+      letters_isa <- cldList(
+        p.value ~ contrast,
+        data = art.con_X_ART_isa,
+        threshold = 0.05,
+        remove.zero = FALSE
+      )
+
+        p_RuralInterior_RuralEdge_isa <- art.con_X_ART_isa$p.value[1]
+        p_UrbanEdge_RuralEdge_isa <- art.con_X_ART_isa$p.value[2]
+        p_UrbanInterior_RuralEdge_isa <- art.con_X_ART_isa$p.value[3]
+        p_RuralInterior_UrbanEdge_isa <- art.con_X_ART_isa$p.value[4]
+        p_UrbanInterior_RuralInterior_isa <- art.con_X_ART_isa$p.value[5]
+        p_UrbanInterior_UrbanEdge_isa  <- art.con_X_ART_isa$p.value[6]
+
+        let_RuralEdge_isa <- letters_isa$Letter[1]
+        let_RuralInterior_isa <- letters_isa$Letter[2]
+        let_UrbanEdge_isa <- letters_isa$Letter[3]
+        let_UrbanInterior_isa <- letters_isa$Letter[4]
+
+    data.frame(
+      variable = v,
+      dfe = p_dfe_isa,
+      urb_cat_isa = p_urb_cat_isa,
+      int_isa = p_int_isa,
+      urb_cat_dist = p_urb_cat_dist,
+      int_dist = p_int_dist,
+      UrbanEdge_RuralEdge_dist = p_UrbanEdge_RuralEdge_dist,
+      RuralInterior_RuralEdge_dist = p_RuralInterior_RuralEdge_dist,
+      UrbanInterior_RuralEdge_dist = p_UrbanInterior_RuralEdge_dist,
+      RuralInterior_UrbanEdge_dist = p_RuralInterior_UrbanEdge_dist,
+      UrbanInterior_UrbanEdge_dist = p_UrbanInterior_UrbanEdge_dist,
+      UrbanInterior_RuralInterior_dist = p_UrbanInterior_RuralInterior_dist,
+      UrbanEdge_dist = let_UrbanEdge_dist,
+      RuralInterior_dist = let_RuralInterior_dist,
+      UrbanInterior_dist = let_UrbanInterior_dist,
+      RuralEdge_dist = let_RuralEdge_dist,
+      UrbanEdge_RuralEdge_isa = p_UrbanEdge_RuralEdge_isa,
+      RuralInterior_RuralEdge_isa = p_RuralInterior_RuralEdge_isa,
+      UrbanInterior_RuralEdge_isa = p_UrbanInterior_RuralEdge_isa,
+      RuralInterior_UrbanEdge_isa = p_RuralInterior_UrbanEdge_isa,
+      UrbanInterior_UrbanEdge_isa = p_UrbanInterior_UrbanEdge_isa,
+      UrbanInterior_RuralInterior_isa = p_UrbanInterior_RuralInterior_isa,
+      UrbanEdge_isa = let_UrbanEdge_isa,
+      RuralInterior_isa = let_RuralInterior_isa,
+      UrbanInterior_isa = let_UrbanInterior_isa,
+      RuralEdge_isa = let_RuralEdge_isa
+    )
+  }, error = function(e) {
+    message("Failed for variable: ", v, " — ", e$message)
+    data.frame(
+      variable = v, dfe = NA, urb_cat_isa = NA, int_isa = NA, urb_cat_dist = NA, int_dist = NA,
+      UrbanEdge_RuralEdge_dist = NA, RuralInterior_RuralEdge_dist = NA, UrbanInterior_RuralEdge_dist = NA,
+      RuralInterior_UrbanEdge_dist = NA, UrbanInterior_UrbanEdge_dist = NA, UrbanInterior_RuralInterior_dist = NA,
+      UrbanEdge_dist = NA, RuralInterior_dist = NA, UrbanInterior_dist = NA, RuralEdge_dist = NA,
+      UrbanEdge_RuralEdge_isa = NA, RuralInterior_RuralEdge_isa = NA, UrbanInterior_RuralEdge_isa = NA,
+      RuralInterior_UrbanEdge_isa = NA, UrbanInterior_UrbanEdge_isa = NA, UrbanInterior_RuralInterior_isa = NA,
+      UrbanEdge_isa = NA, RuralInterior_isa = NA, UrbanInterior_isa = NA, RuralEdge_isa = NA
+    )
+  })
+
+  ART_ANOVA_nest1 <- rbind(ART_ANOVA_nest1, result)
+}
+
+# rounding the p-values to two decimal places
+ART_ANOVA_nest1 <- lapply(ART_ANOVA_nest1, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
+ART_ANOVA_nest1 <- as.data.frame(ART_ANOVA_nest1)
+
+ART_ANOVA_nest1
 ```
 
 ### Loop for Figures (Means & Medians)
@@ -2498,7 +3227,30 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
     p.value ~ contrast,
     data = ambient_PM2.5_open_dist_aovARTcon,
     threshold = 0.05)
-    
+
+# LME with site as a random effect, on the normalized (log-transformed) data
+
+    lme_dfe      <- lmer(log_PM2.5 ~ dfe + (1 | site_name), data = PassiveMassOpenxUNESites)
+    lme_isa      <- lmer(log_PM2.5 ~ urb_cat_isa + (1 | site_name), data = PassiveMassOpenxUNESites)
+    lme_int_isa  <- lmer(log_PM2.5 ~ urb_cat_isa * dfe + (1 | site_name), data = PassiveMassOpenxUNESites)
+    lme_dist     <- lmer(log_PM2.5 ~ urb_cat_dist + (1 | site_name), data = PassiveMassOpenxUNESites)
+    lme_int_dist <- lmer(log_PM2.5 ~ urb_cat_dist * dfe + (1 | site_name), data = PassiveMassOpenxUNESites)
+
+    lme_any_singular <- any(
+      isSingular(lme_dfe), isSingular(lme_isa), isSingular(lme_int_isa),
+      isSingular(lme_dist), isSingular(lme_int_dist)
+    )
+
+    if (!lme_any_singular) {
+      p_dfe_lme      <- anova(lme_dfe)$`Pr(>F)`[1]
+      p_isa_lme      <- anova(lme_isa)$`Pr(>F)`[1]
+      p_int_isa_lme  <- anova(lme_int_isa)$`Pr(>F)`[3]
+      p_dist_lme     <- anova(lme_dist)$`Pr(>F)`[1]
+      p_int_dist_lme <- anova(lme_int_dist)$`Pr(>F)`[3]
+    } else {
+      message("LME with site as a random effect was singular for at least one of the 5 model forms - not added to ambient_PM2.5open_pvals.")
+    }
+
 # Kruskal-Wallis test with each group
     
     # creating a column with the groups "Rural0", "Rural90", "Urban0", "Urban90", "RuralOpen", and "UrbanOpen"
@@ -2620,17 +3372,32 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
       letters_kw_dist$letters_kw_dist[3] -> ambient_PM2.5open_letters_dist[3,6]
       letters_kw_dist$letters_kw_dist[6] -> ambient_PM2.5open_letters_dist[3,7]
     
+      
 # making our matrix of p-values into a dataframe with appropriate rounding
-    
-    # this is the matrix with p-values! now we make it into a data frame 
+
+    # this is the matrix with p-values! now we make it into a data frame
     ambient_PM2.5open_pvals <- as.data.frame(ambient_PM2.5open_pvals)
-    
+
     # make sure all the numbers are classified as "numeric"
-    ambient_PM2.5open_pvals[,2:8] <- lapply(ambient_PM2.5open_pvals[,2:6],as.numeric)
-    
+    # (this previously assigned into columns 2:8, but the table only has 6
+    # columns - that mismatch silently created two bogus extra columns)
+    ambient_PM2.5open_pvals[,2:6] <- lapply(ambient_PM2.5open_pvals[,2:6],as.numeric)
+
+    # add the LME-with-random-effect row, only if it didn't go singular
+    if (!lme_any_singular) {
+      ambient_PM2.5open_pvals <- rbind(ambient_PM2.5open_pvals, data.frame(
+        Analysis = "LME with Random Effect",
+        Edge_vs_Interior = p_dfe_lme,
+        Urb_v_Rural_Dist = p_dist_lme,
+        Interaction_Dist = p_int_dist_lme,
+        Urb_v_Rural_ISA = p_isa_lme,
+        Interaction_ISA = p_int_isa_lme
+      ))
+    }
+
     # reduce all p-values in the matrix to two decimal points
     ambient_PM2.5open_pvals[] <- lapply(ambient_PM2.5open_pvals, function(x) if (is.numeric(x)) signif(x, digits = 2) else x)
-    
+
 ```
 
 #### Figures
@@ -2650,7 +3417,7 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
         median_summary_dist$letter <- NA
         
     for (i in c(1:6)) {
-      median_summary_dist$letter[i] <- ambient_PM2.5open_letters_dist[1,i+1] # using letters from normalized anova
+      median_summary_dist$letter[i] <- ambient_PM2.5open_letters_dist[1,i+1] # using letters from LME with nesting
       median_summary_isa$letter[i] <- ambient_PM2.5open_letters_isa[1,i+1]
       }
     
@@ -2669,9 +3436,9 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
       theme(legend.position="none") +
       geom_text(aes(label = letter, y = upper), position = position_dodge(width = 0.3), hjust=0.5, vjust=0, size = 5, fontface = "bold") +
       annotate(geom = "text", x=0.5, y=Inf, size = 3, label=paste(
-    "Distance from Edge: p",ifelse(ambient_PM2.5open_pvals$Edge_vs_Interior[1]>0.001,paste("=",ambient_PM2.5open_pvals$Edge_vs_Interior[1])," < 0.001 ***"),
-    "\nUrban vs. Rural: p",ifelse(ambient_PM2.5open_pvals$Urb_v_Rural_ISA[1]>0.001,paste("=",ambient_PM2.5open_pvals$Urb_v_Rural_ISA[1])," < 0.001 ***"),
-    "\nDfE X Urb. Cat.: p",ifelse(ambient_PM2.5open_pvals$Interaction_ISA[1]>0.001,paste("=",ambient_PM2.5open_pvals$Interaction_ISA[1])," < 0.001 ***")),
+    "Distance from Edge: p",ifelse(ambient_PM2.5open_pvals$Edge_vs_Interior[3]>0.001,paste("=",ambient_PM2.5open_pvals$Edge_vs_Interior[3])," < 0.001 ***"),
+    "\nUrban vs. Rural: p",ifelse(ambient_PM2.5open_pvals$Urb_v_Rural_ISA[3]>0.001,paste("=",ambient_PM2.5open_pvals$Urb_v_Rural_ISA[3])," < 0.001 ***"),
+    "\nDfE X Urb. Cat.: p",ifelse(ambient_PM2.5open_pvals$Interaction_ISA[3]>0.001,paste("=",ambient_PM2.5open_pvals$Interaction_ISA[3])," < 0.001 ***")),
            hjust=0,
            vjust=1) +
       guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
@@ -2697,9 +3464,9 @@ shapiro.test(PassiveMassOpenxUNESites$PM2.5) # p = 2.8e-05
       theme(legend.position="none") +
       geom_text(aes(label = letter, y = upper), position = position_dodge(width = 0.3), hjust=0.5, vjust=0, size = 5, fontface = "bold") +
       annotate(geom = "text", x=0.5, y=Inf, size = 3, label=paste(
-    "Distance from Edge: p",ifelse(ambient_PM2.5open_pvals$Edge_vs_Interior[1]>0.001,paste("=",ambient_PM2.5open_pvals$Edge_vs_Interior[1])," < 0.001 ***"),
-    "\nUrban vs. Rural: p",ifelse(ambient_PM2.5open_pvals$Urb_v_Rural_Dist[1]>0.001,paste("=",ambient_PM2.5open_pvals$Urb_v_Rural_Dist[1])," < 0.001 ***"),
-    "\nDfE X Urb. Cat.: p",ifelse(ambient_PM2.5open_pvals$Interaction_Dist[1]>0.001,paste("=",ambient_PM2.5open_pvals$Interaction_Dist[1])," < 0.001 ***")),
+    "Distance from Edge: p",ifelse(ambient_PM2.5open_pvals$Edge_vs_Interior[3]>0.001,paste("=",ambient_PM2.5open_pvals$Edge_vs_Interior[3])," < 0.001 ***"),
+    "\nUrban vs. Rural: p",ifelse(ambient_PM2.5open_pvals$Urb_v_Rural_Dist[3]>0.001,paste("=",ambient_PM2.5open_pvals$Urb_v_Rural_Dist[3])," < 0.001 ***"),
+    "\nDfE X Urb. Cat.: p",ifelse(ambient_PM2.5open_pvals$Interaction_Dist[3]>0.001,paste("=",ambient_PM2.5open_pvals$Interaction_Dist[3])," < 0.001 ***")),
            hjust=0,
            vjust=1) +
       guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
@@ -6490,6 +7257,212 @@ ggsave(paste(leaf_var_mean,"_linear.png"), path = file.path(figures_dir,"Continu
 }
 ```
 
+### Each LeafSEM variable by %ISA (Site as Random Effect)
+```{r}
+# this chunk mirrors "Each LeafSEM variable by %ISA & Distance to Boston" above,
+# but adds site as a random effect (lmer, (1 | site_code)) to each %ISA model.
+# Edge-only and Interior-only sub-models always fail here, for every variable -
+# once dfe is fixed there's only 1 observation per site, so (1 | site_code)
+# can't be estimated. That's expected, not data-dependent, and is reported via
+# the same fallback message as any other model that fails to fit.
+
+# subsetting edge & interior in normalized data for statistics
+leafSEM_pair_means_edge <- subset(leafSEM_pair_means_normal, dfe=="0")
+leafSEM_pair_means_interior <- subset(leafSEM_pair_means_normal, dfe=="90")
+
+# subsetting urban & rural in normalized data for statistics
+leafSEM_pair_means_urban <- subset(leafSEM_pair_means_normal, urb_cat_isa=="Urban")
+leafSEM_pair_means_rural <- subset(leafSEM_pair_means_normal, urb_cat_isa=="Rural")
+
+# defining lists of variable names
+leaf_vars_unt <- colnames(leafSEM_pair_means_unt)
+leaf_vars_norm <- colnames(leafSEM_pair_means_normal)
+
+# creating a list for figures
+LeafSEM_ISA_dfe_list_nest1 <- list()
+LeafSEM_ISA_urb_cat_isa_list_nest1 <- list()
+
+# fits an lmer ISA model with site as a random effect, and pulls the
+# coefficient p-value + marginal R^2 (variance explained by the fixed effects
+# alone, via MuMIn::r.squaredGLMM) for one term. Returns ok = FALSE on any
+# fitting error (e.g. not enough observations per site for the random effect)
+fit_lmer_isa_term <- function(formula, data, term) {
+  tryCatch({
+    fit <- lmer(formula, data = data)
+    p <- summary(fit)$coefficients[term, "Pr(>|t|)"]
+    r2m <- MuMIn::r.squaredGLMM(fit)[1, "R2m"]
+    list(ok = TRUE, p = p, r2m = r2m)
+  }, error = function(e) list(ok = FALSE))
+}
+
+# formats one annotation line; falls back to an explicit message if the
+# lmer model for that line didn't run
+fmt_line_nest1 <- function(label, result) {
+  if (!result$ok) return(paste0(label, ": site RE not supported"))
+  paste0(label, ": ", fmt_p(result$p), ",  ", fmt_r2(result$r2m))
+}
+
+# loop to make figures
+
+for (i in c(6,8,10,12,14,16,18,20,22,24,26,28,30)) {
+
+  leaf_var_mean <- leaf_vars_unt[i]
+  leaf_var_se <- leaf_vars_unt[i+1]
+  leaf_var_norm <- leaf_vars_norm[i]
+
+  ymax <- 1.35*(max(leafSEM_pair_means_unt[[leaf_var_mean]])+max(leafSEM_pair_means_unt[[leaf_var_se]]))
+
+  # figure (untransformed data)
+
+    # %ISA, colored by dfe
+
+      dfe_fig_ISA_nest1 <- ggplot(data=leafSEM_pair_means_unt, aes(x=ISA, y=.data[[leaf_var_mean]], col=dfe)) +
+        scale_color_manual(values = c("grey", "black")) +
+        geom_smooth(method=lm,se=FALSE) +
+        geom_point(position = position_dodge(width = 0.3), size = 3) +
+        geom_errorbar(aes(ymin = .data[[leaf_var_mean]] - .data[[leaf_var_se]], ymax = .data[[leaf_var_mean]] + .data[[leaf_var_se]]),
+                      width = 0.002,
+                      position = position_dodge(width = 0.3)) +
+        ylim(0,ymax) +
+        labs(x = "%ISA (Impervious Surface Area)",
+             y = leaf_varnames[[leaf_var_mean]]) +
+        theme_minimal() +
+        theme(plot.title = element_text(size=25),
+              legend.position = "right",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size=15),
+              axis.title.x = element_text(color = "black", size=15),
+              axis.text.y = element_text(color = "black", size=15),
+              axis.title.y = element_text(color = "black", size=15),
+              axis.ticks = element_line(linewidth = 0.5),
+              plot.margin = margin(10, 10, 10, 10)) +
+        guides(color = guide_legend(title = "Distance\nFrom Edge (m)")) +
+        theme(legend.position="none")
+
+    # %ISA, colored by urb_cat_isa
+
+      urb_cat_isa_fig_ISA_nest1 <- ggplot(data=leafSEM_pair_means_unt, aes(x=ISA, y=.data[[leaf_var_mean]], col=urb_cat_isa)) +
+        scale_color_manual(values=c("#eab676", "#154c79")) +
+        geom_smooth(method=lm,se=FALSE)+
+        geom_point(position = position_dodge(width = 0.3), size = 3) +
+        geom_errorbar(aes(ymin = .data[[leaf_var_mean]] - .data[[leaf_var_se]], ymax = .data[[leaf_var_mean]] + .data[[leaf_var_se]]),
+                      width = 0.002,
+                      position = position_dodge(width = 0.3)) +
+        labs(x = "%ISA (Impervious Surface Area)",
+             y = leaf_varnames[[leaf_var_mean]]) +
+        ylim(0,ymax) +
+        theme_minimal() +
+        theme(plot.title = element_text(size=25),
+              legend.position = "right",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.line = element_line(colour = "black"),
+              aspect.ratio = 1,
+              axis.text.x = element_text(color = "black", size=15),
+              axis.title.x = element_text(color = "black", size=15),
+              axis.text.y = element_text(color = "black", size=15),
+              axis.title.y = element_text(color = "black", size=15),
+              axis.ticks = element_line(linewidth = 0.5),
+              plot.margin = margin(10, 10, 10, 10)) +
+        guides(color = guide_legend(title = "Urbanization Cat.")) +
+        theme(legend.position="none")
+
+# adding a figure annotation with the lmer (site as random effect) summary statistics
+
+  if (all(is.na(leafSEM_pair_means_normal[[leaf_var_norm]]) ) == "FALSE") {
+
+      # dfe scheme: Edge / Interior / Both + interaction, all with site as a random effect
+
+        formula_edge_dfe <- as.formula(paste(leaf_var_norm, "~ ISA + (1 | site_code)"))
+        formula_both_dfe <- as.formula(paste(leaf_var_norm, "~ ISA * dfe + (1 | site_code)"))
+
+        res_edge     <- fit_lmer_isa_term(formula_edge_dfe, leafSEM_pair_means_edge, "ISA")
+        res_interior <- fit_lmer_isa_term(formula_edge_dfe, leafSEM_pair_means_interior, "ISA")
+        res_both_dfe <- fit_lmer_isa_term(formula_both_dfe, leafSEM_pair_means_normal, "ISA")
+        res_int_dfe  <- fit_lmer_isa_term(formula_both_dfe, leafSEM_pair_means_normal, "ISA:dfe90")
+
+        ISA_dfe_label_text_nest1 <- paste0(
+          fmt_line_nest1("Edge", res_edge), "\n",
+          fmt_line_nest1("Interior", res_interior), "\n",
+          fmt_line_nest1("Both", res_both_dfe), "\n",
+          fmt_line_nest1("% ISA × DfE", res_int_dfe)
+        )
+
+      # urb_cat_isa scheme: Urban / Rural / Both + interaction, all with site as a random effect
+
+        formula_urb_isa  <- as.formula(paste(leaf_var_norm, "~ ISA + (1 | site_code)"))
+        formula_both_isa <- as.formula(paste(leaf_var_norm, "~ ISA * urb_cat_isa + (1 | site_code)"))
+
+        res_urban    <- fit_lmer_isa_term(formula_urb_isa, leafSEM_pair_means_urban, "ISA")
+        res_rural    <- fit_lmer_isa_term(formula_urb_isa, leafSEM_pair_means_rural, "ISA")
+        res_both_isa <- fit_lmer_isa_term(formula_both_isa, leafSEM_pair_means_normal, "ISA")
+        res_int_isa  <- fit_lmer_isa_term(formula_both_isa, leafSEM_pair_means_normal, "ISA:urb_cat_isaUrban")
+
+        ISA_urb_cat_isa_label_text_nest1 <- paste0(
+          fmt_line_nest1("Urban", res_urban), "\n",
+          fmt_line_nest1("Rural", res_rural), "\n",
+          fmt_line_nest1("Both", res_both_isa), "\n",
+          fmt_line_nest1("% ISA × Urbanization Category", res_int_isa)
+        )
+
+      # now annotate with a plain character string (no parse = TRUE)
+
+        dfe_fig_ISA_nest1 <- dfe_fig_ISA_nest1 +
+          geom_text(
+            x = 28, y = ymax, hjust = 1, vjust = 1, size = 4,
+            label = ISA_dfe_label_text_nest1, inherit.aes = FALSE)
+
+        urb_cat_isa_fig_ISA_nest1 <- urb_cat_isa_fig_ISA_nest1 +
+          geom_text(
+            x = 28, y = ymax, hjust = 1, vjust = 1, size = 4,
+            label = ISA_urb_cat_isa_label_text_nest1, inherit.aes = FALSE
+          )
+  }
+
+  if (all(is.na(leafSEM_pair_means_normal[[leaf_var_norm]]) ) == "TRUE") {
+
+    null_label <- paste0("data not normal after any transformation,\nno parametric statistics calculated")
+
+      dfe_fig_ISA_nest1 <- dfe_fig_ISA_nest1 +
+          annotate(
+            geom = "text",
+            x = Inf, y = Inf, hjust = 1.1, vjust = 1.2, size = 4,
+            label = null_label,
+            size = 4
+          )
+
+      urb_cat_isa_fig_ISA_nest1 <- urb_cat_isa_fig_ISA_nest1 +
+          annotate(
+            geom = "text",
+            x = Inf, y = Inf, hjust = 1.1, vjust = 1.2, size = 4,
+            label = null_label,
+            size = 4
+          )
+  }
+
+# Store each figure in the list we made
+
+LeafSEM_ISA_dfe_list_nest1[[leaf_var_norm]] <- dfe_fig_ISA_nest1
+LeafSEM_ISA_urb_cat_isa_list_nest1[[leaf_var_norm]] <- urb_cat_isa_fig_ISA_nest1
+
+figscombined_nest1 <- plot_grid(dfe_fig_ISA_nest1,urb_cat_isa_fig_ISA_nest1,
+                          labels=NULL,ncol=2,rel_widths=c(1,1),
+                          greedy=TRUE,
+                          align = 'v', axis = 'l',
+                          hjust = -1,
+                          vjust = -0.5
+                          )
+
+# printing figure
+ggsave(paste(leaf_var_mean,"_linear_nest1.png"), path = file.path(figures_dir,"Continuous/Regression Figures/Linear Regression"), plot = figscombined_nest1, width = 9,
+  height = 5, bg = "white")
+
+}
+```
+
 ### LeafSEM variables by Ambient PM2.5 (normalized data) (START HERE)
 ```{r}
 ```
@@ -6760,7 +7733,39 @@ ggsave("wax_foliar_PM2.5.png", plot = fig, path = file.path(figures_dir,"Continu
     O3 <- read.csv(file.path(dropbox,"NOx O3/csvs","2018_2019_O3_Variance.csv"))
       O3 <- O3[!is.na(O3$O3_ppb),]
 
+      
+ # joining NOx and O3 datasets
+    
+    # creating a shared column for the merge
+    
+    NOx$code <- paste(NOx$site_code,substr(NOx$Sample_Code_NOx,3,6),NOx$Date_Installed)
+    O3$code <- paste(O3$site_code,substr(O3$Sample_Code_O3,3,6),O3$Date_Installed)
+    O3 <- O3[,c(11,17)]
+    
+    # joining and cleaning up the frame
+    NOxO3 <- left_join(NOx,O3, by="code")
+    NOxO3 <- NOxO3[,c(1:13,20)]
+    colnames(NOxO3)[colnames(NOxO3)=="Distance_From_Edge"] <- "dfe"
+    NOxO3$dfe <- as.factor(NOxO3$dfe)
+    NOxO3$year <- as.factor(NOxO3$year)
+    
+    # adding a new column with urbanization category (urban or rural) by %ISA
+    NOxO3$urb_cat_isa <- ifelse(NOxO3$site_code %in% urban_isa, "Urban", "Rural") 
+    
+    # narrowing down to just dates from the summer in both years
+    
+        NOxO3 <- subset(NOxO3,Date_Installed=="18.07.18"|Date_Installed=="19.07.18"|Date_Installed=="21.07.18"|Date_Installed=="24.07.18"|Date_Installed=="04.06.19"|Date_Installed=="05.06.19"|Date_Installed=="15.07.19"|Date_Installed=="17.07.19")
+    
+    
+      
+```
+
+## Merging the PM & NOx/O3 Datasets
+```{r}
+
+      
 # calculating means of NOx and O3 by site & dfe
+      
       
   # NOx
 
@@ -6814,24 +7819,16 @@ ggsave("wax_foliar_PM2.5.png", plot = fig, path = file.path(figures_dir,"Continu
     O3_site_dfe_means <- O3_site_dfe_means[,c(1:3,6)]
     colnames(O3_site_dfe_means) <- c("site_code","Distance_From_Edge","mean_O3_ppb","se_O3_ppb")
     
-    
-# joining NOx and O3 datasets
-    
     # creating a shared column for the merge
     
     NOx_site_dfe_means$code <- paste(NOx_site_dfe_means$site_code,NOx_site_dfe_means$Distance_From_Edge)
     O3_site_dfe_means$code <- paste(O3_site_dfe_means$site_code,O3_site_dfe_means$Distance_From_Edge)
     
     
-    NOxO3 <- left_join(NOx_site_dfe_means,O3_site_dfe_means, by="code")
-    NOxO3 <- NOxO3[,c(1:4,8:9)]
-    colnames(NOxO3) <- c("site_code","dfe","mean_NOx_ppb","se_NOx_ppb","mean_O3_ppb","se_O3_ppb")
+    NOxO3_forPM <- left_join(NOx_site_dfe_means,O3_site_dfe_means, by="code")
+    NOxO3_forPM <- NOxO3_forPM[,c(1:4,8:9)]
+    colnames(NOxO3_forPM) <- c("site_code","dfe","mean_NOx_ppb","se_NOx_ppb","mean_O3_ppb","se_O3_ppb")
 
-    
-```
-
-## Merging the PM & NOx/O3 Datasets
-```{r}
 # summarizing the PM data by site
 
   # because the ambient PM2.5, foliar PM2.5, and foliar PM10 data is normal when log-transformed, I will include both the untransformed and log-transformed versions of that data. 
@@ -6864,12 +7861,12 @@ ggsave("wax_foliar_PM2.5.png", plot = fig, path = file.path(figures_dir,"Continu
   # creating new matching columns in both dataframes
   
   PM_pair_means$code <- paste(PM_pair_means$site_code,PM_pair_means$dfe)
-  NOxO3$code <- paste(NOxO3$site_code,NOxO3$dfe)
+  NOxO3_forPM$code <- paste(NOxO3_forPM$site_code,NOxO3_forPM$dfe)
   
   # joining the dataframes
 
   PM_pair_means <- PM_pair_means[,3:17]
-  NOx_O3_PM <- left_join(NOxO3,PM_pair_means,by="code")
+  NOx_O3_PM <- left_join(NOxO3_forPM,PM_pair_means,by="code")
   NOx_O3_PM <- NOx_O3_PM[,c(1:2,7,3:6,8:21)]
   
   # pivoting longer to put PM size as a factor
@@ -7079,61 +8076,98 @@ summary(m_quad_int)
 
 ### NOx vs O3
 ```{r}
+NOxO3_edge <- subset(NOxO3, dfe=="0")
+NOxO3_interior <- subset(NOxO3, dfe=="90")
+
+NOxO3_urban <- subset(NOxO3, urb_cat_isa=="Urban")
+NOxO3_rural <- subset(NOxO3, urb_cat_isa=="Rural")
 
 # Pairwise comparisons between urban & rural NOx & O3
 
-      NOx_dfe_aov <- aov(mean_NOx_ppb~dfe, data = NOx_O3_PM)
+      NOx_dfe_aov <- aov(NOx_ppb ~ dfe, data = NOxO3)
       NOx_dfe_tuk <- TukeyHSD(NOx_dfe_aov, conf.level=.95)
       NOx_dfe_tuk$dfe[4]
 
-      NOx_urb_aov <- aov(mean_NOx_ppb~urb_cat_isa, data = NOx_O3_PM)
+      NOx_urb_aov <- aov(NOx_ppb~urb_cat_isa, data = NOxO3)
       NOx_urb_tuk <- TukeyHSD(NOx_urb_aov, conf.level=.95)
       
-      O3_dfe_aov <- aov(mean_O3_ppb~dfe, data = NOx_O3_PM)
+      O3_dfe_aov <- aov(O3_ppb~dfe, data = NOxO3)
       O3_dfe_tuk <- TukeyHSD(O3_dfe_aov, conf.level=.95)
 
-      O3_urb_aov <- aov(mean_O3_ppb~urb_cat_isa, data = NOx_O3_PM)
+      O3_urb_aov <- aov(O3_ppb~urb_cat_isa, data = NOxO3)
       O3_urb_tuk <- TukeyHSD(O3_urb_aov, conf.level=.95)
-      
+
       
 # linear model
 
   # all NOx & O3 (with interaction)
 
-    NOx_O3.lm <- lm(mean_O3_ppb~mean_NOx_ppb*dfe,
-                               data = NOx_O3_PM)
-    #plot(NOx_O3.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3.lm)) 
-    NOx_O3.lm_sum <- summary(NOx_O3.lm)  
+    NOxO3.lm <- lm(O3_ppb~NOx_ppb*dfe,
+                               data = NOxO3)
+    #plot(NOxO3.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3.lm)) 
+    NOxO3.lm_sum <- summary(NOxO3.lm)  
     
   # NOx & O3 edge
 
-    NOx_O3_edge.lm <- lm(mean_O3_ppb~mean_NOx_ppb,
-                               data = NOx_O3_PM_edge)
-    #plot(NOx_O3_edge.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3_edge.lm))  
-    NOx_O3_edge.lm_sum <- summary(NOx_O3_edge.lm) 
+    NOxO3_edge.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3_edge)
+    #plot(NOxO3_edge.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_edge.lm))  
+    NOxO3_edge.lm_sum <- summary(NOxO3_edge.lm) 
     
   # NOx & O3 interior
 
-    NOx_O3_interior.lm <- lm(mean_O3_ppb~mean_NOx_ppb,
-                               data = NOx_O3_PM_interior)
-    #plot(NOx_O3_interior.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3_interior.lm)) 
-    NOx_O3_interior.lm_sum <-summary(NOx_O3_interior.lm) 
+    NOxO3_interior.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3_interior)
+    #plot(NOxO3_interior.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_interior.lm)) 
+    NOxO3_interior.lm_sum <-summary(NOxO3_interior.lm) 
     
   # NOx & O3 all
 
-    NOx_O3_all.lm <- lm(mean_O3_ppb~mean_NOx_ppb,
-                               data = NOx_O3_PM)
-    #plot(NOx_O3_all.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3_all.lm)) 
-    NOx_O3_all.lm_sum <-summary(NOx_O3_all.lm) 
+    NOxO3_all.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3)
+    #plot(NOxO3_all.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_all.lm)) 
+    NOxO3_all.lm_sum <-summary(NOxO3_all.lm) 
+    
+# linear model with site + year as a random effect
 
-NOx_O3_dfe <-
-  ggplot(data=NOx_O3_PM, mapping=aes(x=mean_NOx_ppb, y=mean_O3_ppb, col=dfe)) +
-  geom_errorbar(aes(ymin=mean_O3_ppb - se_O3_ppb, ymax=mean_O3_ppb + se_O3_ppb),width=0.5) +
-  geom_errorbar(aes(xmin=mean_NOx_ppb - se_NOx_ppb, xmax=mean_NOx_ppb + se_NOx_ppb), width=0.5) +
+  # all NOx & O3 (with interaction)
+
+    NOxO3.lm <- lmer(O3_ppb~NOx_ppb*dfe + (1|year),
+                               data = NOxO3)
+    #plot(NOxO3.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3.lm)) 
+    NOxO3.lm_sum <- summary(NOxO3.lm)  
+    
+  # NOx & O3 edge
+
+    NOxO3_edge.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3_edge)
+    #plot(NOxO3_edge.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_edge.lm))  
+    NOxO3_edge.lm_sum <- summary(NOxO3_edge.lm) 
+    
+  # NOx & O3 interior
+
+    NOxO3_interior.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3_interior)
+    #plot(NOxO3_interior.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_interior.lm)) 
+    NOxO3_interior.lm_sum <-summary(NOxO3_interior.lm) 
+    
+  # NOx & O3 all
+
+    NOxO3_all.lm <-  lmer(O3_ppb~NOx_ppb + (1|year),
+                               data = NOxO3)
+    #plot(NOxO3_all.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_all.lm)) 
+    NOxO3_all.lm_sum <-summary(NOxO3_all.lm) 
+
+NOxO3_dfe <-
+  ggplot(data=NOxO3, mapping=aes(x=NOx_ppb, y=O3_ppb, col=dfe)) +
   geom_point(size = 2.5) +
   ylim(12,30) +
   geom_smooth(method=lm,se=FALSE)+
@@ -7141,12 +8175,12 @@ NOx_O3_dfe <-
   scale_color_manual(values=c("grey", "black"),
                      labels = c("Edge","Interior")) +
   annotate(geom = "text", x=8, y=12, size = 7 , label=paste0(
-    "Edge: p",ifelse(NOx_O3_edge.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"]>0.001,
-          paste0(" = ",signif(NOx_O3_edge.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
-    "\nInterior: p",ifelse(NOx_O3_interior.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOx_O3_interior.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
-    "\nBoth: p",ifelse(NOx_O3_all.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOx_O3_all.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
-    "\nDistance From Edge x NOx: p",ifelse(NOx_O3.lm_sum$coefficients["mean_NOx_ppb:dfe90","Pr(>|t|)"]>0.001,
-          paste0(" = ",signif(NOx_O3.lm_sum$coefficients["mean_NOx_ppb:dfe90","Pr(>|t|)"],digits=2))," < 0.001")),
+    "Edge: p",ifelse(NOxO3_edge.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"]>0.001,
+          paste0(" = ",signif(NOxO3_edge.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
+    "\nInterior: p",ifelse(NOxO3_interior.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOxO3_interior.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
+    "\nBoth: p",ifelse(NOxO3_all.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOxO3_all.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
+    "\nDistance From Edge x NOx: p",ifelse(NOxO3.lm_sum$coefficients["NOx_ppb:dfe90","Pr(>|t|)"]>0.001,
+          paste0(" = ",signif(NOxO3.lm_sum$coefficients["NOx_ppb:dfe90","Pr(>|t|)"],digits=2))," < 0.001")),
     hjust=1,
     vjust=0) +
 annotate(geom = "text", x=0.5, y=30, size = 7 , label=paste0(
@@ -7169,47 +8203,45 @@ annotate(geom = "text", x=0.5, y=30, size = 7 , label=paste0(
   theme(legend.position = "none")
 
 # printing the figure
-  ggsave("NOx_O3_dfe.png", plot = NOx_O3_dfe, path = file.path(dropbox,"NOx O3/Figures"), width = 9,
+  ggsave("NOxO3_dfe.png", plot = NOxO3_dfe, path = file.path(dropbox,"NOx O3/Figures"), width = 9,
   height = 9, bg = "white")
   
   # linear model
 
   # all NOx & O3 (with interaction)
 
-    NOx_O3.lm <- lm(mean_O3_ppb~mean_NOx_ppb*urb_cat_isa,
-                               data = NOx_O3_PM)
-    #plot(NOx_O3.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3.lm))  
-    NOx_O3.lm_sum <- summary(NOx_O3.lm) 
+    NOxO3.lm <- lm(O3_ppb~NOx_ppb*urb_cat_isa, # model goes singular with any random effects
+                               data = NOxO3)
+    #plot(NOxO3.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3.lm))  
+    NOxO3.lm_sum <- summary(NOxO3.lm) 
     
   # NOx & O3 urban
 
-    NOx_O3_urban.lm <- lm(mean_O3_ppb~mean_NOx_ppb,
-                               data = NOx_O3_PM_urban)
-    #plot(NOx_O3_urban.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3_urban.lm)) 
-    NOx_O3_urban.lm_sum <- summary(NOx_O3_urban.lm)  
+    NOxO3_urban.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3_urban)
+    #plot(NOxO3_urban.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_urban.lm)) 
+    NOxO3_urban.lm_sum <- summary(NOxO3_urban.lm)  
     
   # NOx & O3 rural
 
-    NOx_O3_rural.lm <- lm(mean_O3_ppb~mean_NOx_ppb,
-                               data = NOx_O3_PM_rural)
-    #plot(NOx_O3_rural.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3_rural.lm))  
-    NOx_O3_rural.lm_sum <-summary(NOx_O3_rural.lm) 
+    NOxO3_rural.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3_rural)
+    #plot(NOxO3_rural.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_rural.lm))  
+    NOxO3_rural.lm_sum <-summary(NOxO3_rural.lm) 
     
   # NOx & O3 all
 
-    NOx_O3_all.lm <- lm(mean_O3_ppb~mean_NOx_ppb,
-                               data = NOx_O3_PM)
-    #plot(NOx_O3_all.lm,pch=10,col='red')
-    shapiro.test(resid(NOx_O3_all.lm)) 
-    NOx_O3_all.lm_sum <-summary(NOx_O3_all.lm) 
+    NOxO3_all.lm <- lm(O3_ppb~NOx_ppb,
+                               data = NOxO3)
+    #plot(NOxO3_all.lm,pch=10,col='red')
+    shapiro.test(resid(NOxO3_all.lm)) 
+    NOxO3_all.lm_sum <-summary(NOxO3_all.lm) 
 
-NOx_O3_urb <-
-  ggplot(data=NOx_O3_PM, mapping=aes(x=mean_NOx_ppb, y=mean_O3_ppb, col=urb_cat_isa)) +
-  geom_errorbar(aes(ymin=mean_O3_ppb - se_O3_ppb, ymax=mean_O3_ppb + se_O3_ppb),width=0.5) +
-  geom_errorbar(aes(xmin=mean_NOx_ppb - se_NOx_ppb, xmax=mean_NOx_ppb + se_NOx_ppb), width=0.5) +
+NOxO3_urb <-
+  ggplot(data=NOxO3, mapping=aes(x=NOx_ppb, y=O3_ppb, col=urb_cat_isa)) +
   geom_point(size = 2.5) +
   ylim(12,30) +
   geom_smooth(method=lm,se=FALSE,linetype="dashed")+
@@ -7217,12 +8249,12 @@ NOx_O3_urb <-
   scale_color_manual(values=c("#eab676", "#154c79"),
                      labels = c("Urban","Rural")) +
   annotate(geom = "text", x=8, y=12, size = 7 , label=paste0(
-    "Urban: p",ifelse(NOx_O3_urban.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"]>0.001,
-          paste0(" = ",signif(NOx_O3_urban.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
-    "\nRural: p",ifelse(NOx_O3_rural.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOx_O3_rural.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
-    "\nBoth: p",ifelse(NOx_O3_all.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOx_O3_all.lm_sum$coefficients["mean_NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
-    "\nUrb. Cat. x NOx: p",ifelse(NOx_O3.lm_sum$coefficients["mean_NOx_ppb:urb_cat_isaUrban","Pr(>|t|)"]>0.001,
-          paste0(" = ",signif(NOx_O3.lm_sum$coefficients["mean_NOx_ppb:urb_cat_isaUrban","Pr(>|t|)"],digits=2))," < 0.001")),
+    "Urban: p",ifelse(NOxO3_urban.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"]>0.001,
+          paste0(" = ",signif(NOxO3_urban.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
+    "\nRural: p",ifelse(NOxO3_rural.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOxO3_rural.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
+    "\nBoth: p",ifelse(NOxO3_all.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"]>0.001,paste0(" = ",signif(NOxO3_all.lm_sum$coefficients["NOx_ppb","Pr(>|t|)"],digits=2))," < 0.001"),
+    "\nUrb. Cat. x NOx: p",ifelse(NOxO3.lm_sum$coefficients["NOx_ppb:urb_cat_isaUrban","Pr(>|t|)"]>0.001,
+          paste0(" = ",signif(NOxO3.lm_sum$coefficients["NOx_ppb:urb_cat_isaUrban","Pr(>|t|)"],digits=2))," < 0.001")),
     hjust=1,
     vjust=0) +
     annotate(geom = "text", x=0.5, y=30, size = 7 , label=paste0(
@@ -7244,7 +8276,7 @@ NOx_O3_urb <-
   theme(legend.position = "none")
     
 # printing the figure
-  ggsave("NOx_O3_urb.png", plot = NOx_O3_urb, path = file.path(dropbox,"NOx O3/Figures"), width = 9,
+  ggsave("NOxO3_urb.png", plot = NOxO3_urb, path = file.path(dropbox,"NOx O3/Figures"), width = 9,
   height = 9, bg = "white")
   
   
@@ -8189,7 +9221,7 @@ O3_ambient_PM10 <-
 
 ### Combined figure of NOx, O3, and log-transformed ambient & foliar PM
 ```{r}
-NOx_O3_PM_fig_dfe <- plot_grid(plot_grid(NOx_O3_dfe, 
+NOx_O3_PM_fig_dfe <- plot_grid(plot_grid(NOxO3_dfe, 
                                      labels = c("A"),
                                      label_fontface = "bold", label_size = 25
                                      ),
@@ -8205,7 +9237,7 @@ NOx_O3_PM_fig_dfe <- plot_grid(plot_grid(NOx_O3_dfe,
                            #label_fontface = "bold", label_size = 25
                            )
 
-NOx_O3_PM_fig_urb <- plot_grid(plot_grid(NOx_O3_urb, 
+NOx_O3_PM_fig_urb <- plot_grid(plot_grid(NOxO3_urb, 
                                      labels = c("F"),
                                      label_fontface = "bold", label_size = 25
                                      ),

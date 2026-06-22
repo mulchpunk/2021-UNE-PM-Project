@@ -289,7 +289,7 @@ setwd(data_dir)
 ### Urban/Rural and Edge/Interior
 #### Ambient & Foliar
 ##### ART ANOVA (includes open sites for ambient)
-```{r}
+```{r, eval=FALSE}
     # === FOLIAR ===
         
         # Initialize matrices
@@ -1190,7 +1190,7 @@ ambient_PM_art_nest1_pairwise_isa <- finalize_matrix(
 ```
 
 ###### Tree/Sampler Nested Within Site as Random Effect
-```{r}
+```{r, eval=FALSE}
     
    # === FOLIAR ===
         
@@ -1427,7 +1427,7 @@ ambient_PM_art_nest2_pairwise_isa <- finalize_matrix(
 ```
 
 ###### Testing results between the different models
-```{r}
+```{r, eval=FALSE}
 shared_cols <- c("Edge_vs_Interior", "Urb_v_Rural_Dist", "Interaction_Dist",
                  "Urb_v_Rural_ISA", "Interaction_ISA")
 
@@ -2790,7 +2790,7 @@ element <- all_element_names[i]
 
 #### One-way Pairwise Comparisons (capital letters)
 ##### ART ANOVA 
-```{r}
+```{r, eval=FALSE}
 
 # subsetting just the edge & interior sites
   AllCompxUNESites_NOopen <- subset(AllCompxUNESites, dfe=="0"|dfe=="90")
@@ -5475,7 +5475,7 @@ ggsave(paste(element,"_urbcatxdfe.png"), path = file.path(figures_dir,"Elements/
 ```
 ### Medians
 #### Foliar
-```{r}
+```{r, eval=FALSE}
 # defining list of element names
 element_names <- all_element_names
 
@@ -5730,7 +5730,7 @@ ggsave(paste(element,"foliar_urbcatxdfe_art_test.png"), plot = figs, path = file
 
 
 #### Ambient
-```{r}
+```{r, eval=FALSE}
 # defining list of element names
 element_names <- all_element_names
 
@@ -5986,7 +5986,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(fi
 ```
 
 #### Comparing Ambient & Foliar Medians
-```{r}
+```{r, eval=FALSE}
 
 # calculating medians for both ambient & foliar groups
 
@@ -6113,7 +6113,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(fi
 ```
 
 #### Comparing Ambient & Foliar Medians with Urbanization Category & DfE
-```{r}
+```{r, eval=FALSE}
 # calculating medians for both ambient & foliar groups
         
   for (i in c(1:26)) {
@@ -6190,7 +6190,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(fi
 ```
 
 #### Combining Them
-```{r}
+```{r, eval=FALSE}
 
 for (i in c(1:26)) {
   element <- element_names[i]
@@ -6272,7 +6272,7 @@ ggsave(paste(element,"_urbcatxdfe.png"), plot = fig, width = 9, path = file.path
 
 ### Medians Without Open Sites
 #### Foliar
-```{r}
+```{r, eval=FALSE}
 # defining list of element names
 element_names <- all_element_names
 
@@ -6527,7 +6527,7 @@ ggsave(paste(element,"foliar_urbcatxdfe_art.png"), plot = figs, path = file.path
 
 
 #### Ambient
-```{r}
+```{r, eval=FALSE}
 # defining list of element names
 element_names <- all_element_names
 
@@ -6782,7 +6782,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(fi
 ```
 
 #### Comparing Ambient & Foliar Medians
-```{r}
+```{r, eval=FALSE}
 
 # calculating medians for both ambient & foliar groups
 
@@ -6909,7 +6909,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(fi
 ```
 
 #### Comparing Ambient & Foliar Medians with Urbanization Category & DfE
-```{r}
+```{r, eval=FALSE}
 # calculating medians for both ambient & foliar groups
         
   for (i in c(1:26)) {
@@ -6986,7 +6986,7 @@ ggsave(paste(element,"ambient_urbcatxdfe.png"), plot = figs, path = file.path(fi
 ```
 
 #### Combining Them
-```{r}
+```{r, eval=FALSE}
 
 for (i in c(1:26)) {
   element <- element_names[i]
@@ -10646,35 +10646,34 @@ for (element in ambient_element_names) {
 ```{r}
 # this panel draws from the other .Rmd file containing all the figures from the LeafSEM dataset, "2021_UNE_LeafSEM.Rmd". Be sure to run the entire section "Nonparametric Analyses" before running the Panel A chunk below
 
-  # manually setting margins
-  # figs_pub_medians$ambient_PM2.5 <- 
-    # figs_pub_medians$ambient_PM2.5 + theme(plot.margin = margin(5, 0, 5, 5))
-
 # ambient
-  ambient_element_urbcatxdfe_medians_list_isa_pub$cations <- ambient_element_urbcatxdfe_medians_list_isa_pub$cations + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$cations <- ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$cations + 
       theme(
         plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) +
     labs(y="% Total Cations")
 
-  ambient_element_urbcatxdfe_medians_list_isa_pub$traffic <- 
-    ambient_element_urbcatxdfe_medians_list_isa_pub$traffic + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic <- 
+    ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic + 
         theme(
           plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) +
     labs(y="% Traffic-Associated Elements")
   
-  ambient_element_urbcatxdfe_medians_list_isa_pub$Ca <- 
-   ambient_element_urbcatxdfe_medians_list_isa_pub$Ca + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca <- 
+   ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca + 
         theme(
           plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
+          axis.text.y = element_text(color = "black", size = 10),
           axis.ticks.length.x = unit(0, "cm"))
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca$layers[[3]] <- NULL 
+  # removing small letters because nothing is significant
   
-  ambient_element_urbcatxdfe_medians_list_isa_pub$Al <- 
-    ambient_element_urbcatxdfe_medians_list_isa_pub$Al + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Al <- 
+    ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Al + 
         theme(
           plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
@@ -10683,28 +10682,32 @@ for (element in ambient_element_names) {
   
   
   # foliar
-  foliar_element_urbcatxdfe_medians_list_isa_pub$cations <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$cations + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$cations <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$cations + 
       theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"))+
         labs(y="% Total Cations")
 
-  foliar_element_urbcatxdfe_medians_list_isa_pub$traffic <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$traffic + 
+   foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) +
         labs(y="% Traffic-Associated Elements")
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic$layers[[3]] <- NULL 
+  # removing small letters because nothing is significant
   
-  foliar_element_urbcatxdfe_medians_list_isa_pub$Ca <- 
-   foliar_element_urbcatxdfe_medians_list_isa_pub$Ca + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca <- 
+   foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"))
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca$layers[[3]] <- NULL 
+  # removing small letters because nothing is significant
   
-  foliar_element_urbcatxdfe_medians_list_isa_pub$Al <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$Al + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Al <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Al + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"),
@@ -10716,6 +10719,7 @@ for (element in ambient_element_names) {
     # theme(axis.text.x = element_text(color = "black", size = 15)) +
     #labs(title = expression("Ambient PM"[2.5]))
   
+  # pre-specified stats on model w site as random effect in the LeafSEM file
   ambient_PM2.5_open_urb_cat_isa_medians <- ambient_PM2.5_open_urb_cat_isa_medians +
     theme(axis.title.x = element_text(color = "black", size = 15),
           axis.text.x = element_text(color = "black", size = 15),
@@ -10728,6 +10732,8 @@ for (element in ambient_element_names) {
     labs(title = expression("Ambient PM"[2.5]),
          y = expression("Ambient PM"[2.5]*" ("*mu*"g m"^-3*")")) +
     ylim(2,40)
+  ambient_PM2.5_open_urb_cat_isa_medians$layers[[3]] <- NULL 
+  # removing small letters because only Urban vs Rural is significant
     
    LeafSEM_ANOVA_ISA$foliar_PM2.5 <- LeafSEM_ANOVA_ISA$foliar_PM2.5 + 
     theme(axis.title.x = element_text(color = "black", size = 15),
@@ -10739,39 +10745,40 @@ for (element in ambient_element_names) {
           axis.ticks.length.x = unit(0, "cm")) + 
     labs(title = expression("Foliar PM"[2.5]),
          x = NULL) 
+  LeafSEM_ANOVA_ISA$foliar_PM2.5$layers[[4]] <- NULL 
+  # removing small letters because only Urban vs Rural is significant
   
-panelE <- ggdraw() +
+panelD <- ggdraw() +
   draw_plot(ambient_PM2.5_open_urb_cat_isa_medians, x = 0,    y = 0, width = 0.52, height = 1) +
   draw_plot(LeafSEM_ANOVA_ISA$foliar_PM2.5, x = 0.5, y = 0, width = 0.52, height = 1) 
 
-panelB <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$cations, x = 0.45, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$cations, x = 0,    y = 0, width = 0.52, height = 1) 
+panelA <- ggdraw() +
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$cations, x = 0.45, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$cations, x = 0,    y = 0, width = 0.52, height = 1) 
    
-panelC <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$traffic, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$traffic, x = 0,    y = 0, width = 0.52, height = 1)   
+panelB <- ggdraw() +
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$traffic, x = 0,    y = 0, width = 0.52, height = 1)   
   
-panelD <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$Ca, x = 0.42, y = 0, width = 0.55, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$Ca, x = -0.03,    y = 0, width = 0.55, height = 1)  
+panelC <- ggdraw() +
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca, x = 0.42, y = 0, width = 0.55, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Ca, x = -0.03,    y = 0, width = 0.55, height = 1)  
   
     
-panelA <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$Al, x = 0.40, y = 0, width = 0.54, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$Al, x = -0.01,    y = 0, width = 0.54, height = 1) 
+# panelA <- ggdraw() +
+#   draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$Al, x = 0.40, y = 0, width = 0.54, height = 1) +
+#   draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$Al, x = -0.01,    y = 0, width = 0.54, height = 1) 
 
 figX <- plot_grid(panelA, panelB,
                   panelC, panelD,
-                  panelE,
                   ncol = 2,
-                  labels = c("A","B","C","D","E"),
+                  labels = c("A","B","C","D"),
                   label_fontface = "bold",
                   label_size = 25)
 
 # printing figure
 ggsave("figX.png", plot = figX, path = file.path(figures_dir,"For Pub"), width = 12,
-  height = 10, bg = "white")
+  height = 8, bg = "white")
 
 
 ```
@@ -10784,31 +10791,31 @@ ggsave("figX.png", plot = figX, path = file.path(figures_dir,"For Pub"), width =
 # final adjustments to graphs
 
 # ambient
-  ambient_element_urbcatxdfe_medians_list_isa_pub$C <- 
-    ambient_element_urbcatxdfe_medians_list_isa_pub$C + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$C <- 
+    ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$C + 
       theme(
         plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"))
 
-  ambient_element_urbcatxdfe_medians_list_isa_pub$P <- 
-    ambient_element_urbcatxdfe_medians_list_isa_pub$P + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$P <- 
+    ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$P + 
         theme(
          plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) + 
     ylim(0,0.5)
   
-  ambient_element_urbcatxdfe_medians_list_isa_pub$N <- 
-   ambient_element_urbcatxdfe_medians_list_isa_pub$N + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$N <- 
+   ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$N + 
         theme(
           plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) + 
       ylim(0,33)
   
-  ambient_element_urbcatxdfe_medians_list_isa_pub$S <- 
-    ambient_element_urbcatxdfe_medians_list_isa_pub$S + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$S <- 
+    ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$S + 
         theme(
           plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
@@ -10817,8 +10824,8 @@ ggsave("figX.png", plot = figX, path = file.path(figures_dir,"For Pub"), width =
     ylim(-0.1,1.5)
       
   
-  ambient_element_urbcatxdfe_medians_list_isa_pub$CN <- 
-  ambient_element_urbcatxdfe_medians_list_isa_pub$CN + 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$CN <- 
+  ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$CN + 
         theme(
           plot.margin = margin(5, 5, 5, 5),
           axis.ticks = element_line(linewidth = 0.5),
@@ -10827,85 +10834,79 @@ ggsave("figX.png", plot = figX, path = file.path(figures_dir,"For Pub"), width =
       labs(y = "C:N")
   
   # foliar
-  foliar_element_urbcatxdfe_medians_list_isa_pub$C <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$C + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$C <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$C + 
       theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"))
 
-  foliar_element_urbcatxdfe_medians_list_isa_pub$P <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$P + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$P <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$P + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) + 
     ylim(0,0.5)
   
-  foliar_element_urbcatxdfe_medians_list_isa_pub$N <- 
-   foliar_element_urbcatxdfe_medians_list_isa_pub$N + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$N <- 
+   foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$N + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm")) + 
       ylim(0,33)
   
-  foliar_element_urbcatxdfe_medians_list_isa_pub$S <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$S + 
+  foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$S <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$S + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"),
           axis.text.y = element_text(color = "black", size = 15))+
     ylim(-0.1,1.5)
   
-    foliar_element_urbcatxdfe_medians_list_isa_pub$CN <- 
-    foliar_element_urbcatxdfe_medians_list_isa_pub$CN + 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$CN <- 
+    foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$CN + 
         theme(
           axis.ticks = element_line(linewidth = 0.5),
           axis.ticks.length.x = unit(0, "cm"),
           axis.text.y = element_text(color = "black", size = 15)) + 
       labs(y = "C:N")
 
-# BLANK FIGURES, RUN THESE INSTEAD        
-ambient_element_urbcatxdfe_medians_list_isa$C <- 
-    ambient_element_urbcatxdfe_medians_list_isa$C + 
-      theme(
-        plot.margin = margin(5, 5, 5, 5),
-          axis.ticks = element_line(linewidth = 0.5),
-          axis.ticks.length.x = unit(0, "cm"))  
+# Removing crowded letters from some figures & those whose differences are only between urban/rural or dfe        
+ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$C$layers[[3]] <- NULL
+ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$P$layers[[3]] <- NULL
+ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$N$layers[[3]] <- NULL
+ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$S$layers[[3]] <- NULL
 
-ambient_element_urbcatxdfe_medians_list_isa$P <- 
-    ambient_element_urbcatxdfe_medians_list_isa$P + 
-        theme(
-         plot.margin = margin(5, 5, 5, 5),
-          axis.ticks = element_line(linewidth = 0.5),
-          axis.ticks.length.x = unit(0, "cm")) + 
-    ylim(0,0.5)
+foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$N$layers[[3]] <- NULL
+foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$CN$layers[[3]] <- NULL
+
 
 panelA <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$C, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa$C, x = 0,    y = 0, width = 0.52, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$C, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa$C, x = 0,    y = 0, width = 0.52, height = 1) 
 
 panelB <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$P, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa$P, x = 0,    y = 0, width = 0.52, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$P, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa$P, x = 0,    y = 0, width = 0.52, height = 1) 
 
 # Panels
 panelA <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$C, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$C, x = 0,    y = 0, width = 0.52, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$C, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$C, x = 0,    y = 0, width = 0.52, height = 1) 
 
 panelB <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$P, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$P, x = 0,    y = 0, width = 0.52, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$P, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$P, x = 0,    y = 0, width = 0.52, height = 1) 
     
 panelC <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$N, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$N, x = 0,    y = 0, width = 0.52, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$N, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$N, x = 0,    y = 0, width = 0.52, height = 1) 
   
 panelD <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$S, x = 0.42, y = 0, width = 0.52, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$S, x = 0,    y = 0, width = 0.52, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$S, x = 0.42, y = 0, width = 0.52, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$S, x = 0,    y = 0, width = 0.52, height = 1) 
 panelE <- ggdraw() +
-  draw_plot(foliar_element_urbcatxdfe_medians_list_isa_pub$CN, x = 0.45, y = 0, width = 0.50, height = 1) +
-  draw_plot(ambient_element_urbcatxdfe_medians_list_isa_pub$CN, x = 0.03,    y = 0, width = 0.50, height = 1) 
+  draw_plot(foliar_element_urbcatxdfe_medians_list_nest1_isa_pub$CN, x = 0.45, y = 0, width = 0.50, height = 1) +
+  draw_plot(ambient_element_urbcatxdfe_medians_list_nest1_isa_pub$CN, x = 0.03,    y = 0, width = 0.50, height = 1) 
 
 figY <- plot_grid(panelA, panelB,
                   panelC, panelD,
@@ -11065,8 +11066,10 @@ ggsave("figV.png", plot = figV, path = file.path(figures_dir,"For Pub"), width =
 ```{r}
 # this panel draws from the other .Rmd file containing all the figures from the LeafSEM dataset, "2021_UNE_LeafSEM.Rmd". Be sure to run the entire section "# Parametric Analyses > ## Loop for Parametric ANOVA Figures" before running the chunk below
 
-figU <- plot_grid(LeafSEM_ANOVA$stomatal_density,
-                  LeafSEM_ANOVA$hyphal_conc,
+# removing post-hoc letters when there is no significance (none of these figures have significance)
+
+figU <- plot_grid(LeafSEM_ANOVA_nest1$stomatal_density,
+                  LeafSEM_ANOVA_nest1$hyphal_conc,
                   LeafSEM_ART_ANOVA$wax,
                   ncol = 1,
                   labels=c("A","B","C"),
@@ -11148,8 +11151,8 @@ ggsave("figT.png", plot = figT, path = file.path(figures_dir,"For Pub"), width =
 figS <- NOx_O3_PM_fig 
 
 # printing figure
-ggsave("figS.png", plot = figS, path = file.path(figures_dir,"For Pub"), width = 20,
-  height = 14, bg = "white")
+ggsave("figS.png", plot = figS, path = file.path(figures_dir,"For Pub"), width = 14,
+  height = 20, bg = "white")
 ```
 
 ## Figure R
